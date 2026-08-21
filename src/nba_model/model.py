@@ -145,6 +145,8 @@ def _build_team_state(
 def build_training_data(seasons: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     logs = fetch_game_logs(seasons)
     available_seasons = sorted(logs["SEASON"].dropna().astype(str).unique().tolist())
+    if not available_seasons:
+        raise ValueError("No valid seasons available from game logs.")
     form = build_team_form(logs, lookback_games=10)
     games = to_game_level(form)
     elo_result = add_elo_features(games)
@@ -159,7 +161,7 @@ def build_training_data(seasons: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]
         team_form=form,
         seasonal_stats=seasonal_stats,
         latest_elos=elo_result.latest_elos,
-        current_season=seasons[-1],
+        current_season=available_seasons[-1],
     )
     return merged, team_state
 

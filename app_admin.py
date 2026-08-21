@@ -70,15 +70,21 @@ with left:
     st.subheader("Model Operations")
     force_retrain = st.checkbox("Force full retrain before generating picks", value=True)
     if st.button("Generate Latest Predictions", type="primary", use_container_width=True):
-        with st.spinner("Running model + pulling live Odds API lines..."):
-            payload = generate_predictions(settings=settings, force_retrain=force_retrain)
-        st.success(f"Generated {len(payload.get('games', []))} game predictions.")
+        try:
+            with st.spinner("Running model + pulling live Odds API lines..."):
+                payload = generate_predictions(settings=settings, force_retrain=force_retrain)
+            st.success(f"Generated {len(payload.get('games', []))} game predictions.")
+        except Exception as exc:
+            st.error(f"Prediction refresh failed: {exc}")
 
     if st.button("Train Model Only", use_container_width=True):
-        with st.spinner("Training model from NBA stats history..."):
-            bundle = train_and_save_model(settings=settings)
-        st.success("Model retrained.")
-        st.json(bundle.metrics)
+        try:
+            with st.spinner("Training model from NBA stats history..."):
+                bundle = train_and_save_model(settings=settings)
+            st.success("Model retrained.")
+            st.json(bundle.metrics)
+        except Exception as exc:
+            st.error(f"Model training failed: {exc}")
 
 with right:
     st.subheader("GitHub Workflow Control")
