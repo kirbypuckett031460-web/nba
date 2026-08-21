@@ -1,0 +1,7 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+
+# Local model binary cache
+data/model_artifact.joblib

@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+scipy
+scikit-learn
+nba_api
+requests
+python-dateutil
+pytz
+joblib
+lxml
