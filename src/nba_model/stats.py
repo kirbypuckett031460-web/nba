@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+import time
 from typing import Any
 
 import numpy as np
@@ -46,14 +47,41 @@ def _season_end_year(season: str) -> int:
 
 
 def _fetch_html(url: str) -> str:
-    response = requests.get(url, timeout=40)
-    response.raise_for_status()
-    return response.text
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (X11; Linux x86_64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/126.0.0.0 Safari/537.36"
+        )
+    }
+    last_exc: Exception | None = None
+    for attempt in range(4):
+        try:
+            response = requests.get(url, headers=headers, timeout=40)
+            if response.status_code == 404:
+                return ""
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            last_exc = exc
+            # Treat 4xx (except 429) as not retriable and skip.
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if status_code and 400 <= status_code < 500 and status_code != 429:
+                return ""
+            if attempt == 3:
+                break
+            time.sleep(2**attempt)
+
+    if last_exc:
+        raise last_exc
+    return ""
 
 
 def _bref_month_urls(season_end_year: int) -> list[str]:
     base = f"https://www.basketball-reference.com/leagues/NBA_{season_end_year}_games.html"
     html = _fetch_html(base)
+    if not html:
+        return []
     matches = sorted(set(re.findall(rf"/leagues/NBA_{season_end_year}_games-[a-z]+\.html", html)))
     return [f"https://www.basketball-reference.com{path}" for path in matches]
 
@@ -66,7 +94,10 @@ def _bref_games_for_season(season: str) -> pd.DataFrame:
 
     tables: list[pd.DataFrame] = []
     for month_url in month_urls:
-        month_tables = pd.read_html(month_url)
+        try:
+            month_tables = pd.read_html(month_url)
+        except Exception:
+            continue
         if not month_tables:
             continue
         table = month_tables[0]
@@ -102,7 +133,10 @@ def fetch_game_logs(seasons: list[str]) -> pd.DataFrame:
     lookup = team_lookup()
     rows: list[dict[str, Any]] = []
     for season in seasons:
-        season_games = _bref_games_for_season(season)
+        try:
+            season_games = _bref_games_for_season(season)
+        except Exception:
+            continue
         for _, game in season_games.iterrows():
             game_date = pd.to_datetime(game["game_date"])
             away_team = str(game["away_team"])

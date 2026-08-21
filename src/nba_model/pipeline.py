@@ -23,7 +23,13 @@ def train_and_save_model(settings: AppSettings) -> TrainingBundle:
 def generate_predictions(settings: AppSettings, force_retrain: bool = False) -> dict[str, Any]:
     settings.ensure_paths()
     if force_retrain or not settings.model_path.exists():
-        bundle = train_and_save_model(settings=settings)
+        try:
+            bundle = train_and_save_model(settings=settings)
+        except Exception:
+            if settings.model_path.exists():
+                bundle = TrainingBundle.load(settings.model_path)
+            else:
+                raise
     else:
         bundle = TrainingBundle.load(settings.model_path)
 
