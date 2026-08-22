@@ -8,6 +8,24 @@ from src.nba_model.settings import AppSettings
 
 
 st.set_page_config(page_title="NBA Picks Dashboard", page_icon="🏀", layout="wide")
+st.markdown(
+    """
+    <style>
+      /* Hide Streamlit chrome links/buttons on public embed page */
+      [data-testid="stToolbar"],
+      [data-testid="stDecoration"],
+      [data-testid="stStatusWidget"],
+      #MainMenu {
+        display: none !important;
+      }
+      [data-testid="stAppViewContainer"] header a[href*="github.com"],
+      [data-testid="stAppViewContainer"] header a[href*="fork"] {
+        display: none !important;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 st.title("🏀 NBA Moneyline + Totals Model")
 st.caption("Live market lines from The Odds API with model-implied probabilities and edges.")
 
