@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 import re
 import time
 from typing import Any
@@ -9,6 +10,8 @@ import numpy as np
 import pandas as pd
 import requests
 from nba_api.stats.static import teams
+
+FALLBACK_GAME_LOGS_PATH = Path(__file__).resolve().parents[2] / "data" / "historical_game_logs.csv"
 
 
 def normalize_team_name(name: str) -> str:
@@ -129,14 +132,32 @@ def _bref_games_for_season(season: str) -> pd.DataFrame:
     return season_games.sort_values("game_date").reset_index(drop=True)
 
 
+def _load_fallback_game_logs(seasons: list[str]) -> pd.DataFrame:
+    if not FALLBACK_GAME_LOGS_PATH.exists():
+        return pd.DataFrame()
+    cached = pd.read_csv(FALLBACK_GAME_LOGS_PATH)
+    if "SEASON" not in cached.columns:
+        return pd.DataFrame()
+    cached = cached[cached["SEASON"].astype(str).isin([str(s) for s in seasons])].copy()
+    if cached.empty:
+        return cached
+    cached["GAME_DATE"] = pd.to_datetime(cached["GAME_DATE"], errors="coerce")
+    cached = cached.dropna(subset=["GAME_DATE"])
+    return cached.sort_values("GAME_DATE").reset_index(drop=True)
+
+
 def fetch_game_logs(seasons: list[str]) -> pd.DataFrame:
     lookup = team_lookup()
     rows: list[dict[str, Any]] = []
+    fetched_seasons: set[str] = set()
     for season in seasons:
         try:
             season_games = _bref_games_for_season(season)
         except Exception:
             continue
+        if season_games.empty:
+            continue
+        fetched_seasons.add(str(season))
         for _, game in season_games.iterrows():
             game_date = pd.to_datetime(game["game_date"])
             away_team = str(game["away_team"])
@@ -177,10 +198,21 @@ def fetch_game_logs(seasons: list[str]) -> pd.DataFrame:
                 }
             )
 
-    if not rows:
-        raise ValueError("No game logs found from Basketball Reference.")
-    logs = pd.DataFrame(rows)
-    logs["GAME_DATE"] = pd.to_datetime(logs["GAME_DATE"])
+    logs = pd.DataFrame(rows) if rows else pd.DataFrame()
+    if not logs.empty:
+        logs["GAME_DATE"] = pd.to_datetime(logs["GAME_DATE"], errors="coerce")
+        logs = logs.dropna(subset=["GAME_DATE"]).copy()
+
+    missing_seasons = [str(s) for s in seasons if str(s) not in fetched_seasons]
+    if missing_seasons:
+        cached = _load_fallback_game_logs(missing_seasons)
+        if not cached.empty:
+            logs = pd.concat([logs, cached], ignore_index=True)
+
+    if logs.empty:
+        raise ValueError(
+            "No game logs found from Basketball Reference or local fallback cache."
+        )
     return logs.sort_values("GAME_DATE").reset_index(drop=True)
 
 

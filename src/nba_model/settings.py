@@ -31,8 +31,9 @@ def season_strings(lookback: int) -> list[str]:
     from datetime import datetime
 
     now = datetime.utcnow()
-    # NBA regular season starts in October.
-    current_season_start = now.year if now.month >= 10 else now.year - 1
+    # Train through the most recently completed season to avoid relying on
+    # upcoming/current-season schedules with sparse or missing results.
+    current_season_start = now.year - 1
     seasons: list[str] = []
     for year in range(current_season_start - lookback + 1, current_season_start + 1):
         seasons.append(f"{year}-{str(year + 1)[-2:]}")

@@ -86,3 +86,9 @@ Set repo secret:
 ## Notes for embedding
 
 Streamlit apps are embedded with an `<iframe>` from a deployed URL (Streamlit Cloud, your own VM, etc). Example snippet is included in the assistant response.
+
+## Training data resilience
+
+- The trainer uses recent completed NBA seasons by default (currently goes through last completed season).
+- If Basketball-Reference requests fail in your hosting environment, the app falls back to the bundled cache:
+  - `data/historical_game_logs.csv`
