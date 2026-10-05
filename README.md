@@ -3,6 +3,7 @@
 Two Streamlit applications share a Python modeling backend:
 
 - **Admin app** (`app_admin.py`): passphrase-protected control panel to retrain models, refresh predictions from The Odds API, and manually trigger your GitHub workflow.
+  - Includes a date scope selector so you can generate picks for a specific **ET date** or all upcoming dates.
 - **Public app** (`app_public.py`): read-only predictions dashboard for website visitors.
 
 ## What the model uses

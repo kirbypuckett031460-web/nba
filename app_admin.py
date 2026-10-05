@@ -3,6 +3,7 @@ from __future__ import annotations
 import hmac
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -69,11 +70,33 @@ left, right = st.columns([1, 1])
 with left:
     st.subheader("Model Operations")
     force_retrain = st.checkbox("Force full retrain before generating picks", value=True)
+    run_scope = st.radio(
+        "Prediction scope",
+        options=["Selected date (ET)", "All upcoming dates"],
+        index=0,
+    )
+    default_et_date = datetime.now(ZoneInfo("America/New_York")).date()
+    selected_date = st.date_input(
+        "Prediction date (ET)",
+        value=default_et_date,
+        disabled=run_scope != "Selected date (ET)",
+    )
     if st.button("Generate Latest Predictions", type="primary", use_container_width=True):
+        target_date = selected_date.isoformat() if run_scope == "Selected date (ET)" else None
         try:
             with st.spinner("Running model + pulling live Odds API lines..."):
-                payload = generate_predictions(settings=settings, force_retrain=force_retrain)
-            st.success(f"Generated {len(payload.get('games', []))} game predictions.")
+                payload = generate_predictions(
+                    settings=settings,
+                    force_retrain=force_retrain,
+                    target_date=target_date,
+                    target_timezone="America/New_York",
+                )
+            filter_label = (
+                f" for {payload.get('filter_date')} ET"
+                if payload.get("filter_date")
+                else " for all upcoming dates"
+            )
+            st.success(f"Generated {len(payload.get('games', []))} game predictions{filter_label}.")
         except Exception as exc:
             st.error(f"Prediction refresh failed: {exc}")
 
@@ -116,6 +139,10 @@ st.divider()
 payload = load_predictions(settings.predictions_path)
 games = payload.get("games", [])
 st.write(f"Last refresh: `{payload.get('generated_at')}` | Model built: `{payload.get('model_generated_at')}`")
+if payload.get("filter_date"):
+    st.caption(
+        f"Active prediction filter: {payload.get('filter_date')} ({payload.get('filter_timezone', 'America/New_York')})"
+    )
 if payload.get("model_metrics"):
     st.json(payload["model_metrics"])
 
