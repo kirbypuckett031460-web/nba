@@ -68,11 +68,16 @@ def _season_stats_for_training(seasons: list[str]) -> pd.DataFrame:
         except Exception:
             continue
     if not frames:
-        raise ValueError("Unable to fetch any team season snapshots for model training.")
+        # Continue training using only game-log-derived features when
+        # season summary snapshots are unavailable upstream.
+        return pd.DataFrame()
     return pd.concat(frames, ignore_index=True)
 
 
 def _merge_game_with_stats(games: pd.DataFrame, seasonal_stats: pd.DataFrame) -> pd.DataFrame:
+    if seasonal_stats.empty:
+        return games.copy()
+
     home = seasonal_stats.add_prefix("home_").rename(columns={"home_TEAM_ID": "home_team_id", "home_season": "season"})
     away = seasonal_stats.add_prefix("away_").rename(columns={"away_TEAM_ID": "away_team_id", "away_season": "season"})
 
@@ -135,8 +140,16 @@ def _build_team_state(
         ]
     ]
 
-    season_slice = seasonal_stats[seasonal_stats["season"] == current_season].copy()
-    state = season_slice.merge(latest_form, on=["TEAM_ID", "TEAM_NAME"], how="left")
+    if not seasonal_stats.empty and "season" in seasonal_stats.columns:
+        season_slice = seasonal_stats[seasonal_stats["season"] == current_season].copy()
+        if season_slice.empty:
+            season_slice = seasonal_stats.copy()
+        state = season_slice.merge(latest_form, on=["TEAM_ID", "TEAM_NAME"], how="left")
+    else:
+        # Fallback feature state when season snapshots are unavailable.
+        state = latest_form.copy()
+        state["season"] = current_season
+
     state["elo_pre"] = state["TEAM_ID"].map(latest_elos).fillna(1500.0)
     state.rename(columns={"GAME_DATE": "latest_game_date", "is_b2b": "b2b"}, inplace=True)
     return state
