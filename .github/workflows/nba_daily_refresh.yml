@@ -55,12 +55,21 @@ jobs:
           PREDICTIONS_PATH: data/latest_predictions.json
           LOOKBACK_SEASONS: "5"
           MIN_EDGE_PCT: "2.0"
-        run: python scripts/daily_refresh.py
+        run: |
+          if [ -z "${ODDS_API_KEY}" ]; then
+            echo "ODDS_API_KEY is not configured in repository secrets."
+            exit 1
+          fi
+          python scripts/daily_refresh.py
 
       - name: Commit refreshed data
         if: github.event_name != 'schedule' || steps.noon_check.outputs.run_refresh == 'true'
         run: |
-          if git diff --quiet data/latest_predictions.json data/latest_summary.json; then
+          if [ ! -f data/latest_predictions.json ] || [ ! -f data/latest_summary.json ]; then
+            echo "Expected prediction output files were not generated."
+            exit 1
+          fi
+          if git diff --quiet -- data/latest_predictions.json data/latest_summary.json; then
             echo "No prediction file changes."
             exit 0
           fi
@@ -68,4 +77,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/latest_predictions.json data/latest_summary.json
           git commit -m "chore: refresh nba model predictions"
+          git pull --rebase origin "${GITHUB_REF_NAME:-main}" || true
           git push
