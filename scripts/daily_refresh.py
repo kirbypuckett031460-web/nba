@@ -3,6 +3,12 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
+import sys
+
+# Ensure repo root is importable when this script is executed directly from CI.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from src.nba_model.pipeline import generate_predictions
 from src.nba_model.settings import AppSettings
