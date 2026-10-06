@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
+import time
+
 import pandas as pd
+import requests
 import streamlit as st
 
 from src.nba_model.pipeline import load_predictions
@@ -30,7 +35,57 @@ st.title("🏀 NBA Moneyline + Totals Model")
 st.caption("Live market lines from The Odds API with model-implied probabilities and edges.")
 
 settings = AppSettings()
-payload = load_predictions(settings.predictions_path)
+
+
+def _prediction_file_path(settings: AppSettings) -> str:
+    path = str(settings.predictions_path).replace("\\", "/")
+    if path.startswith("./"):
+        path = path[2:]
+    if path.startswith("/"):
+        path = path[1:]
+    return path
+
+
+def _load_predictions_from_github(settings: AppSettings) -> tuple[dict, str] | None:
+    owner = (settings.github_owner or "").strip()
+    repo = (settings.github_repo or "").strip()
+    if not owner or not repo:
+        return None
+
+    branch = os.getenv("PREDICTIONS_BRANCH", "main")
+    prediction_path = _prediction_file_path(settings)
+    token = (settings.github_token or "").strip()
+
+    # Private repos can use GitHub Contents API with bearer auth.
+    if token:
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{prediction_path}"
+        headers = {
+            "Accept": "application/vnd.github.raw",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        response = requests.get(api_url, headers=headers, params={"ref": branch}, timeout=20)
+        if response.status_code == 200:
+            return json.loads(response.text), "github-api"
+
+    # Public fallback (or private if raw endpoint is accessible in your setup).
+    raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{prediction_path}"
+    response = requests.get(raw_url, params={"_ts": int(time.time())}, timeout=20)
+    if response.status_code == 200:
+        return json.loads(response.text), "github-raw"
+
+    return None
+
+
+if st.button("Refresh picks", use_container_width=False):
+    st.rerun()
+
+payload_source = "local-file"
+remote = _load_predictions_from_github(settings)
+if remote is not None:
+    payload, payload_source = remote
+else:
+    payload = load_predictions(settings.predictions_path)
 games = payload.get("games", [])
 
 if not games:
@@ -91,4 +146,4 @@ full_cols = [
 ]
 st.dataframe(df[full_cols], use_container_width=True, hide_index=True)
 
-st.caption(f"Last updated: {payload.get('generated_at')}")
+st.caption(f"Last updated: {payload.get('generated_at')} | Source: {payload_source}")
