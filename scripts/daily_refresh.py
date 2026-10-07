@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+import os
 from pathlib import Path
 import sys
 
@@ -16,13 +17,22 @@ from src.nba_model.settings import AppSettings
 
 def main() -> None:
     settings = AppSettings()
-    payload = generate_predictions(settings=settings, force_retrain=True)
+    target_date = (os.getenv("TARGET_DATE", "") or "").strip() or None
+    target_timezone = (os.getenv("TARGET_TIMEZONE", "") or "America/New_York").strip()
+    payload = generate_predictions(
+        settings=settings,
+        force_retrain=True,
+        target_date=target_date,
+        target_timezone=target_timezone,
+    )
 
     summary_path = Path("data/latest_summary.json")
     summary = {
         "generated_at": payload.get("generated_at"),
         "games_count": len(payload.get("games", [])),
         "metrics": payload.get("model_metrics", {}),
+        "filter_date": payload.get("filter_date"),
+        "filter_timezone": payload.get("filter_timezone"),
     }
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
