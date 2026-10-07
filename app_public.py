@@ -33,7 +33,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.title("NBA Picks")
-st.caption("Live market lines from The Odds API with model-implied probabilities and edges.")
 
 settings = AppSettings()
 
@@ -286,10 +285,9 @@ def _load_predictions_from_github(settings: AppSettings) -> tuple[dict, str] | N
 if st.button("Refresh picks", use_container_width=False):
     st.rerun()
 
-payload_source = "local-file"
 remote = _load_predictions_from_github(settings)
 if remote is not None:
-    payload, payload_source = remote
+    payload, _ = remote
 else:
     payload = load_predictions(settings.predictions_path)
 games = payload.get("games", [])
@@ -328,6 +326,15 @@ def _as_pct_text(value: float | int | str | None, default: str = "0.0%") -> str:
         return f"{val:.1f}%"
     except Exception:
         return default
+
+
+def _format_generated_at_et(value: str | None) -> str:
+    if not value:
+        return "N/A"
+    ts = pd.to_datetime(value, utc=True, errors="coerce")
+    if pd.isna(ts):
+        return "N/A"
+    return ts.tz_convert("America/New_York").strftime("%Y-%m-%d %I:%M %p ET")
 
 
 def _prob_to_american(prob: float | int | None) -> str:
@@ -605,4 +612,4 @@ ou_styler = (
 with tab_ou:
     st.dataframe(ou_styler, use_container_width=True)
 
-st.caption(f"Last updated: {payload.get('generated_at')} | Source: {payload_source}")
+st.caption(_format_generated_at_et(payload.get("generated_at")))
