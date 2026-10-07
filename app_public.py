@@ -531,6 +531,15 @@ def _confidence_color(v: float | int | None) -> str:
     return "background-color: #2d3e57; color: #d5def0;"
 
 
+def _ou_pick_color(value: str | None) -> str:
+    pick = str(value or "").strip().lower()
+    if pick == "over":
+        return "background-color: #0f8f6f; color: #eafff8; font-weight: 700;"
+    if pick == "under":
+        return "background-color: #5b1f2f; color: #ffd9e3; font-weight: 700;"
+    return "background-color: #2e3b54; color: #dbe8ff; font-weight: 700;"
+
+
 ml_styler = (
     ml_display.style.hide(axis="index")
     .apply(lambda s: [_edge_color(v) for v in ml_table["best_moneyline_edge_pct"]], subset=["Edge"])
@@ -590,6 +599,7 @@ ou_styler = (
     ou_display.style.hide(axis="index")
     .apply(lambda s: [_edge_color(v) for v in ou_table["edge_raw"]], subset=["Edge"])
     .apply(lambda s: [_confidence_color(v) for v in ou_table["confidence_prob"]], subset=["Confidence"])
+    .apply(lambda s: [_ou_pick_color(v) for v in ou_table["Pick"]], subset=["Pick"])
 )
 
 with tab_ou:

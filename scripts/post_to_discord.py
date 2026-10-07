@@ -217,8 +217,10 @@ def _conf_bg(conf_val: Any) -> tuple[int, int, int]:
 
 def _pick_bg(value: Any) -> tuple[int, int, int]:
     text = str(value or "").upper()
-    if text in {"OVER", "UNDER"}:
-        return (36, 63, 99)
+    if text == "OVER":
+        return (15, 143, 111)
+    if text == "UNDER":
+        return (91, 31, 47)
     return (30, 95, 180)
 
 
@@ -295,7 +297,7 @@ def _render_table_image(
                 bg = _conf_bg(row.get("__conf_val"))
             draw.rectangle([cx, y, cx + w, y + row_h], fill=bg, outline=(48, 58, 78))
             text = str(row.get(h, "—"))
-            draw.text((cx + 8, y + 8), text, fill=(232, 238, 252), font=font_small if h in {"Away", "Home", "Pick"} else font)
+            draw.text((cx + 8, y + 8), text, fill=(232, 238, 252), font=font_small)
             cx += w
         y += row_h
 
