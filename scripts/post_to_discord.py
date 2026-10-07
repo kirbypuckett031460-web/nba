@@ -217,8 +217,10 @@ def _conf_bg(conf_val: Any) -> tuple[int, int, int]:
 
 def _pick_bg(value: Any) -> tuple[int, int, int]:
     text = str(value or "").upper()
-    if text in {"OVER", "UNDER"}:
-        return (36, 63, 99)
+    if text == "OVER":
+        return (15, 143, 111)
+    if text == "UNDER":
+        return (91, 31, 47)
     return (30, 95, 180)
 
 
