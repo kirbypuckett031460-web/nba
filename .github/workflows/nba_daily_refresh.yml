@@ -5,6 +5,16 @@ on:
     # Runs at both 16:00 and 17:00 UTC, then filters to exactly noon ET in-step.
     - cron: "0 16,17 * * *"
   workflow_dispatch:
+    inputs:
+      target_date:
+        description: "Optional ET date to publish (YYYY-MM-DD). Leave blank for all upcoming games."
+        required: false
+        type: string
+      target_timezone:
+        description: "Timezone used for target_date filtering."
+        required: false
+        default: "America/New_York"
+        type: string
 
 permissions:
   contents: write
@@ -55,6 +65,8 @@ jobs:
           PREDICTIONS_PATH: data/latest_predictions.json
           LOOKBACK_SEASONS: "5"
           MIN_EDGE_PCT: "2.0"
+          TARGET_DATE: ${{ github.event.inputs.target_date }}
+          TARGET_TIMEZONE: ${{ github.event.inputs.target_timezone || 'America/New_York' }}
         run: |
           if [ -z "${ODDS_API_KEY}" ]; then
             echo "ODDS_API_KEY is not configured in repository secrets."

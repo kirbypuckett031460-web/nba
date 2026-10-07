@@ -44,7 +44,14 @@ def _auth_guard() -> bool:
     return False
 
 
-def _dispatch_workflow(owner: str, repo: str, workflow_file: str, token: str, ref: str) -> tuple[bool, str]:
+def _dispatch_workflow(
+    owner: str,
+    repo: str,
+    workflow_file: str,
+    token: str,
+    ref: str,
+    inputs: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
     headers = {
         "Accept": "application/vnd.github+json",
@@ -52,6 +59,8 @@ def _dispatch_workflow(owner: str, repo: str, workflow_file: str, token: str, re
         "X-GitHub-Api-Version": "2022-11-28",
     }
     payload = {"ref": ref}
+    if inputs:
+        payload["inputs"] = inputs
     response = requests.post(url, headers=headers, json=payload, timeout=30)
     if response.status_code == 204:
         return True, "Workflow dispatch requested."
@@ -123,15 +132,22 @@ with right:
         if missing:
             st.error(f"Missing required settings for dispatch: {', '.join(missing)}")
         else:
+            dispatch_target_date = selected_date.isoformat() if run_scope == "Selected date (ET)" else ""
+            dispatch_inputs = {
+                "target_date": dispatch_target_date,
+                "target_timezone": "America/New_York",
+            }
             ok, message = _dispatch_workflow(
                 owner=settings.github_owner,
                 repo=settings.github_repo,
                 workflow_file=settings.github_workflow_file,
                 token=settings.github_token,
                 ref=branch_ref,
+                inputs=dispatch_inputs,
             )
             if ok:
-                st.success(message)
+                date_msg = f" (target date: {dispatch_target_date} ET)" if dispatch_target_date else " (all upcoming dates)"
+                st.success(f"{message}{date_msg}")
             else:
                 st.error(message)
 

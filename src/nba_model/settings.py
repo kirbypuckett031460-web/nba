@@ -13,6 +13,7 @@ class AppSettings:
     odds_bookmakers: str = os.getenv("ODDS_BOOKMAKERS", "")
     model_path: Path = Path(os.getenv("MODEL_PATH", "data/model_artifact.joblib"))
     predictions_path: Path = Path(os.getenv("PREDICTIONS_PATH", "data/latest_predictions.json"))
+    picks_history_path: Path = Path(os.getenv("PICKS_HISTORY_PATH", "data/picks_history.json"))
     lookback_seasons: int = int(os.getenv("LOOKBACK_SEASONS", "5"))
     min_edge_pct: float = float(os.getenv("MIN_EDGE_PCT", "2.0"))
     admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "")
@@ -24,6 +25,7 @@ class AppSettings:
     def ensure_paths(self) -> None:
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.predictions_path.parent.mkdir(parents=True, exist_ok=True)
+        self.picks_history_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def season_strings(lookback: int) -> list[str]:

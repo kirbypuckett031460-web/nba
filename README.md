@@ -4,6 +4,7 @@ Two Streamlit applications share a Python modeling backend:
 
 - **Admin app** (`app_admin.py`): passphrase-protected control panel to retrain models, refresh predictions from The Odds API, and manually trigger your GitHub workflow.
   - Includes a date scope selector so you can generate picks for a specific **ET date** or all upcoming dates.
+  - Manual workflow dispatch now forwards the selected date to CI so published public picks match the admin-selected slate.
 - **Public app** (`app_public.py`): read-only predictions dashboard for website visitors.
   - Includes a manual **Refresh picks** button.
   - Pulls latest prediction JSON from GitHub (`main` branch) when `GITHUB_OWNER`/`GITHUB_REPO` are configured, with local file fallback.
@@ -95,3 +96,11 @@ Streamlit apps are embedded with an `<iframe>` from a deployed URL (Streamlit Cl
 - The trainer uses recent completed NBA seasons by default (currently goes through last completed season).
 - If Basketball-Reference requests fail in your hosting environment, the app falls back to the bundled cache:
   - `data/historical_game_logs.csv`
+
+## Public record tracking (YTD / yesterday)
+
+- Prediction history is persisted to `data/picks_history.json`.
+- As final scores become available, the app computes moneyline/totals records for:
+  - yesterday
+  - current season YTD
+- If no completed games exist yet (e.g., before opening night), cards correctly show `0-0` and `0.0%`.
