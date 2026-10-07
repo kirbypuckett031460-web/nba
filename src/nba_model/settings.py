@@ -5,9 +5,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+def _first_env(*keys: str, default: str = "") -> str:
+    for key in keys:
+        value = os.getenv(key, "")
+        if value and value.strip():
+            return value.strip()
+    return default
+
+
 @dataclass(frozen=True)
 class AppSettings:
-    odds_api_key: str = os.getenv("ODDS_API_KEY", "")
+    odds_api_key: str = _first_env("ODDS_API_KEY", "THE_ODDS_API_KEY", "ODDSAPI_KEY")
     odds_regions: str = os.getenv("ODDS_REGIONS", "us")
     odds_markets: str = os.getenv("ODDS_MARKETS", "h2h,totals")
     odds_bookmakers: str = os.getenv("ODDS_BOOKMAKERS", "")
@@ -16,11 +24,11 @@ class AppSettings:
     picks_history_path: Path = Path(os.getenv("PICKS_HISTORY_PATH", "data/picks_history.json"))
     lookback_seasons: int = int(os.getenv("LOOKBACK_SEASONS", "5"))
     min_edge_pct: float = float(os.getenv("MIN_EDGE_PCT", "2.0"))
-    admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "")
-    github_owner: str = os.getenv("GITHUB_OWNER", "")
-    github_repo: str = os.getenv("GITHUB_REPO", "")
-    github_workflow_file: str = os.getenv("GITHUB_WORKFLOW_FILE", "nba_daily_refresh.yml")
-    github_token: str = os.getenv("GITHUB_TOKEN", "")
+    admin_passphrase: str = os.getenv("ADMIN_PASSPHRASE", "").strip()
+    github_owner: str = os.getenv("GITHUB_OWNER", "").strip()
+    github_repo: str = os.getenv("GITHUB_REPO", "").strip()
+    github_workflow_file: str = os.getenv("GITHUB_WORKFLOW_FILE", "nba_daily_refresh.yml").strip()
+    github_token: str = os.getenv("GITHUB_TOKEN", "").strip()
 
     def ensure_paths(self) -> None:
         self.model_path.parent.mkdir(parents=True, exist_ok=True)

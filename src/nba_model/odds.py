@@ -12,6 +12,10 @@ import requests
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
 
 
+class OddsApiAuthError(RuntimeError):
+    """Raised when The Odds API rejects the configured API key."""
+
+
 @dataclass
 class MarketPrices:
     home_price: float | None = None
@@ -52,7 +56,17 @@ def fetch_raw_odds(
         params["bookmakers"] = bookmakers
 
     response = requests.get(ODDS_API_BASE, params=params, timeout=30)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        if response.status_code in {401, 403}:
+            detail = (response.text or "").strip()[:250]
+            raise OddsApiAuthError(
+                "The Odds API rejected the supplied key (HTTP "
+                f"{response.status_code}). Confirm your GitHub Actions secret value is valid."
+                + (f" Response: {detail}" if detail else "")
+            ) from exc
+        raise
     return response.json()
 
 

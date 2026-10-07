@@ -61,6 +61,8 @@ jobs:
         if: github.event_name != 'schedule' || steps.noon_check.outputs.run_refresh == 'true'
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          ODDSAPI_KEY: ${{ secrets.ODDSAPI_KEY }}
           MODEL_PATH: /tmp/model_artifact.joblib
           PREDICTIONS_PATH: data/latest_predictions.json
           LOOKBACK_SEASONS: "5"
@@ -68,8 +70,8 @@ jobs:
           TARGET_DATE: ${{ github.event.inputs.target_date }}
           TARGET_TIMEZONE: ${{ github.event.inputs.target_timezone || 'America/New_York' }}
         run: |
-          if [ -z "${ODDS_API_KEY}" ]; then
-            echo "ODDS_API_KEY is not configured in repository secrets."
+          if [ -z "${ODDS_API_KEY}" ] && [ -z "${THE_ODDS_API_KEY}" ] && [ -z "${ODDSAPI_KEY}" ]; then
+            echo "No Odds API key secret found. Set ODDS_API_KEY (preferred), THE_ODDS_API_KEY, or ODDSAPI_KEY."
             exit 1
           fi
           python scripts/daily_refresh.py
