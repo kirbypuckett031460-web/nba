@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -59,6 +58,19 @@ def _fmt_edge(value: Any) -> str:
     return f"{float(value):+.1f}%"
 
 
+def _fmt_american(value: Any) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    odds = int(round(float(value)))
+    return f"{odds:+d}" if odds > 0 else str(odds)
+
+
+def _fmt_float(value: Any, decimals: int = 1) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    return f"{float(value):.{decimals}f}"
+
+
 def _to_et(ts: Any) -> str:
     dt = pd.to_datetime(ts, utc=True, errors="coerce")
     if pd.isna(dt):
@@ -66,22 +78,78 @@ def _to_et(ts: Any) -> str:
     return dt.tz_convert("America/New_York").strftime("%I:%M %p ET")
 
 
-def _top_moneyline_lines(frame: pd.DataFrame, limit: int = 8) -> str:
+def _format_cell(value: Any, width: int) -> str:
+    text = str(value if value is not None else "—")
+    if len(text) > width:
+        return text[: max(width - 1, 1)] + "…"
+    return text.ljust(width)
+
+
+def _table_block(
+    headers: list[str],
+    rows: list[list[Any]],
+    widths: list[int],
+    max_chars: int = 980,
+) -> tuple[str, int]:
+    header_line = " | ".join(_format_cell(h, w) for h, w in zip(headers, widths))
+    divider = "-+-".join("-" * w for w in widths)
+    lines = [header_line, divider]
+    kept = 0
+    for row in rows:
+        row_line = " | ".join(_format_cell(v, w) for v, w in zip(row, widths))
+        candidate = "\n".join(lines + [row_line])
+        if len(candidate) > max_chars and kept > 0:
+            break
+        lines.append(row_line)
+        kept += 1
+    omitted = max(len(rows) - kept, 0)
+    block = "```text\n" + "\n".join(lines) + "\n```"
+    if omitted > 0:
+        block += f"\n…and {omitted} more."
+    return block, omitted
+
+
+def _moneyline_table_text(frame: pd.DataFrame) -> str:
     if frame.empty:
         return "No games."
     ml = frame.copy()
     ml["conf_prob"] = ml.apply(_pick_confidence_prob, axis=1)
-    ml = ml.sort_values("best_moneyline_edge_pct", ascending=False, na_position="last").head(limit)
-    lines: list[str] = []
+    ml["pick_team"] = ml["moneyline_pick"].astype(str).str.replace(" ML", "", regex=False)
+    ml["mkt"] = ml.apply(
+        lambda r: r.get("home_moneyline")
+        if str(r.get("pick_team", "")) == str(r.get("home_team", ""))
+        else (r.get("away_moneyline") if str(r.get("pick_team", "")) == str(r.get("away_team", "")) else None),
+        axis=1,
+    )
+    ml["fair"] = ml["conf_prob"].apply(
+        lambda p: "—"
+        if p is None
+        else (f"{-round((p / (1 - p)) * 100):d}" if p >= 0.5 else f"+{round(((1 - p) / p) * 100):d}")
+    )
+    ml = ml.sort_values("commence_time", ascending=True, na_position="last")
+    rows: list[list[Any]] = []
     for _, row in ml.iterrows():
-        lines.append(
-            f"{_to_et(row.get('commence_time'))} | {row.get('away_team')} @ {row.get('home_team')} | "
-            f"{row.get('moneyline_pick')} | edge {_fmt_edge(row.get('best_moneyline_edge_pct'))} | conf {_fmt_pct(row.get('conf_prob'))}"
+        rows.append(
+            [
+                _to_et(row.get("commence_time")),
+                row.get("away_team"),
+                row.get("home_team"),
+                _fmt_american(row.get("mkt")),
+                row.get("fair"),
+                row.get("pick_team"),
+                _fmt_edge(row.get("best_moneyline_edge_pct")),
+                _fmt_pct(row.get("conf_prob")),
+            ]
         )
-    return "\n".join(lines)
+    text, _ = _table_block(
+        headers=["Game Time (ET)", "Away", "Home", "Mkt", "Fair", "Pick", "Edge", "Confidence"],
+        rows=rows,
+        widths=[14, 18, 18, 6, 6, 18, 8, 10],
+    )
+    return text
 
 
-def _top_totals_lines(frame: pd.DataFrame, limit: int = 8) -> str:
+def _totals_table_text(frame: pd.DataFrame) -> str:
     if frame.empty:
         return "No games."
     tot = frame.copy()
@@ -90,14 +158,27 @@ def _top_totals_lines(frame: pd.DataFrame, limit: int = 8) -> str:
         axis=1,
     )
     tot["conf_prob"] = tot.apply(_tot_confidence_prob, axis=1)
-    tot = tot.sort_values("edge_raw", ascending=False, na_position="last").head(limit)
-    lines: list[str] = []
+    tot = tot.sort_values("commence_time", ascending=True, na_position="last")
+    rows: list[list[Any]] = []
     for _, row in tot.iterrows():
-        lines.append(
-            f"{_to_et(row.get('commence_time'))} | {row.get('away_team')} @ {row.get('home_team')} | "
-            f"{row.get('total_pick')} {row.get('total_line')} | edge {_fmt_edge(row.get('edge_raw'))} | conf {_fmt_pct(row.get('conf_prob'))}"
+        rows.append(
+            [
+                _to_et(row.get("commence_time")),
+                row.get("away_team"),
+                row.get("home_team"),
+                _fmt_float(row.get("total_line"), 1),
+                _fmt_float(row.get("model_projected_total"), 1),
+                row.get("total_pick"),
+                _fmt_edge(row.get("edge_raw")),
+                _fmt_pct(row.get("conf_prob")),
+            ]
         )
-    return "\n".join(lines)
+    text, _ = _table_block(
+        headers=["Game Time (ET)", "Away", "Home", "Line", "Proj", "Pick", "Edge", "Confidence"],
+        rows=rows,
+        widths=[14, 18, 18, 6, 6, 8, 8, 10],
+    )
+    return text
 
 
 def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
@@ -135,8 +216,8 @@ def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]
                 "description": description,
                 "color": 3447003,
                 "fields": [
-                    {"name": "Moneyline Picks", "value": _top_moneyline_lines(frame), "inline": False},
-                    {"name": "Over/Under Picks", "value": _top_totals_lines(frame), "inline": False},
+                    {"name": "Moneyline Picks", "value": _moneyline_table_text(frame), "inline": False},
+                    {"name": "Over/Under Picks", "value": _totals_table_text(frame), "inline": False},
                 ],
             }
         ],
