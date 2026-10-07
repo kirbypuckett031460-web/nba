@@ -9,6 +9,7 @@ import pandas as pd
 
 from .model import TrainingBundle, predict_from_odds, train_models
 from .odds import fetch_raw_odds, odds_to_dataframe
+from .performance import compute_performance, empty_performance_payload, update_pick_history
 from .settings import AppSettings, season_strings
 
 
@@ -87,14 +88,23 @@ def generate_predictions(
         target_date=target_date,
         target_timezone=target_timezone,
     )
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    history_df = update_pick_history(
+        path=settings.picks_history_path,
+        predictions_df=predictions_df,
+        generated_at=generated_at,
+    )
+    performance = compute_performance(history_df=history_df, timezone=target_timezone)
 
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": generated_at,
         "model_generated_at": bundle.generated_at,
         "model_metrics": bundle.metrics,
         "residual_total_std": bundle.residual_total_std,
         "filter_date": filter_date.isoformat() if filter_date else None,
         "filter_timezone": target_timezone if filter_date else None,
+        "performance": performance,
         "games": _serialize_predictions(predictions_df),
     }
     settings.predictions_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -109,9 +119,13 @@ def load_predictions(path: Path) -> dict[str, Any]:
             "model_metrics": {},
             "filter_date": None,
             "filter_timezone": None,
+            "performance": empty_performance_payload(),
             "games": [],
         }
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if "performance" not in payload:
+        payload["performance"] = empty_performance_payload()
+    return payload
 
 
 def _serialize_predictions(df: pd.DataFrame) -> list[dict[str, Any]]:

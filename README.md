@@ -96,3 +96,11 @@ Streamlit apps are embedded with an `<iframe>` from a deployed URL (Streamlit Cl
 - The trainer uses recent completed NBA seasons by default (currently goes through last completed season).
 - If Basketball-Reference requests fail in your hosting environment, the app falls back to the bundled cache:
   - `data/historical_game_logs.csv`
+
+## Public record tracking (YTD / yesterday)
+
+- Prediction history is persisted to `data/picks_history.json`.
+- As final scores become available, the app computes moneyline/totals records for:
+  - yesterday
+  - current season YTD
+- If no completed games exist yet (e.g., before opening night), cards correctly show `0-0` and `0.0%`.

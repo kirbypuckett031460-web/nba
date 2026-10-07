@@ -33,6 +33,7 @@ def main() -> None:
         "metrics": payload.get("model_metrics", {}),
         "filter_date": payload.get("filter_date"),
         "filter_timezone": payload.get("filter_timezone"),
+        "performance": payload.get("performance", {}),
     }
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

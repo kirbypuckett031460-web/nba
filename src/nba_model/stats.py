@@ -132,6 +132,11 @@ def _bref_games_for_season(season: str) -> pd.DataFrame:
     return season_games.sort_values("game_date").reset_index(drop=True)
 
 
+def fetch_schedule_results_for_season(season: str) -> pd.DataFrame:
+    """Return completed games for the given season from Basketball-Reference."""
+    return _bref_games_for_season(season)
+
+
 def _load_fallback_game_logs(seasons: list[str]) -> pd.DataFrame:
     if not FALLBACK_GAME_LOGS_PATH.exists():
         return pd.DataFrame()
