@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-07T17:22:53.478883+00:00",
+  "generated_at": "2026-10-07T17:36:56.679155+00:00",
   "games_count": 3,
   "metrics": {
-    "moneyline_auc": 0.7048356859797126,
-    "moneyline_log_loss": 0.6352581549971871,
-    "total_mae": 15.756331126502282,
+    "moneyline_auc": 0.7447935517999833,
+    "moneyline_log_loss": 0.6030280796437746,
+    "total_mae": 15.384455442165795,
     "sample_games": 6605.0
   },
   "filter_date": "2026-10-20",
