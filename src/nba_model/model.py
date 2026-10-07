@@ -351,18 +351,25 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         over_edge = (over_prob - over_market) * 100.0 if over_market is not None and pd.notna(over_prob) else np.nan
         under_edge = (under_prob - under_market) * 100.0 if under_market is not None and pd.notna(under_prob) else np.nan
 
-        moneyline_pick = "Pass"
+        # Always produce a pick for every game: select the stronger side even if edge is small/negative.
         best_moneyline_edge = np.nanmax([home_edge, away_edge]) if not (np.isnan(home_edge) and np.isnan(away_edge)) else np.nan
-        if np.isfinite(home_edge) and home_edge >= min_edge_pct and home_edge >= away_edge:
+        if np.isfinite(home_edge) and np.isfinite(away_edge):
+            moneyline_pick = f"{game['home_team']} ML" if home_edge >= away_edge else f"{game['away_team']} ML"
+        elif np.isfinite(home_edge):
             moneyline_pick = f"{game['home_team']} ML"
-        elif np.isfinite(away_edge) and away_edge >= min_edge_pct:
+        elif np.isfinite(away_edge):
             moneyline_pick = f"{game['away_team']} ML"
+        else:
+            moneyline_pick = f"{game['home_team']} ML" if home_win_prob >= away_win_prob else f"{game['away_team']} ML"
 
-        total_pick = "Pass"
-        if np.isfinite(over_edge) and over_edge >= min_edge_pct and over_edge >= under_edge:
+        if np.isfinite(over_prob) and np.isfinite(under_prob):
+            total_pick = "Over" if over_prob >= under_prob else "Under"
+        elif np.isfinite(over_prob):
             total_pick = "Over"
-        elif np.isfinite(under_edge) and under_edge >= min_edge_pct:
+        elif np.isfinite(under_prob):
             total_pick = "Under"
+        else:
+            total_pick = "Over"
 
         rows.append(
             {
