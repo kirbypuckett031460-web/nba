@@ -69,13 +69,13 @@ jobs:
             echo "Expected prediction output files were not generated."
             exit 1
           fi
-          if git diff --quiet -- data/latest_predictions.json data/latest_summary.json; then
-            echo "No prediction file changes."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/latest_predictions.json data/latest_summary.json
+          if git diff --cached --quiet; then
+            echo "No prediction file changes."
+            exit 0
+          fi
           git commit -m "chore: refresh nba model predictions"
           git pull --rebase origin "${GITHUB_REF_NAME:-main}" || true
           git push
