@@ -306,42 +306,9 @@ def _render_table_image(
     img.save(output_path, format="PNG")
 
 
-def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
-    games = predictions_payload.get("games", []) or []
-    frame = pd.DataFrame(games)
-    game_count = len(frame)
-    generated_at = str(predictions_payload.get("generated_at") or "")
-    filter_date = predictions_payload.get("filter_date")
-    filter_tz = predictions_payload.get("filter_timezone") or "America/New_York"
-    title_scope = f"{filter_date} ({filter_tz})" if filter_date else "All upcoming dates"
-
-    if generated_at:
-        try:
-            generated_disp = (
-                pd.to_datetime(generated_at, utc=True, errors="coerce")
-                .tz_convert("America/New_York")
-                .strftime("%Y-%m-%d %I:%M %p ET")
-            )
-        except Exception:
-            generated_disp = generated_at
-    else:
-        generated_disp = "N/A"
-
-    summary_description = (
-        f"**Scope:** {title_scope}\n"
-        f"**Games:** {game_count}\n"
-        f"**Generated:** {generated_disp}"
-    )
-
+def build_discord_payload() -> dict[str, Any]:
     return {
         "content": "🏀 NBA picks",
-        "embeds": [
-            {
-                "title": "NBA Picks",
-                "description": summary_description,
-                "color": 3447003,
-            },
-        ],
     }
 
 
@@ -359,7 +326,7 @@ def main() -> None:
         raise FileNotFoundError(f"Predictions file not found: {predictions_path}")
 
     payload = json.loads(predictions_path.read_text(encoding="utf-8"))
-    discord_payload = build_discord_payload(payload)
+    discord_payload = build_discord_payload()
     frame = pd.DataFrame(payload.get("games", []) or [])
     ml_rows = _moneyline_table_data(frame)
     ou_rows = _totals_table_data(frame)
