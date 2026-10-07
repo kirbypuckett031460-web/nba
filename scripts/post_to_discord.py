@@ -185,7 +185,7 @@ def _totals_table_text(frame: pd.DataFrame) -> str:
     return _table_block(headers=headers, rows=rows, widths=widths)
 
 
-def build_discord_messages(predictions_payload: dict[str, Any]) -> list[dict[str, Any]]:
+def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
     games = predictions_payload.get("games", []) or []
     frame = pd.DataFrame(games)
     game_count = len(frame)
@@ -206,17 +206,32 @@ def build_discord_messages(predictions_payload: dict[str, Any]) -> list[dict[str
     else:
         generated_disp = "N/A"
 
-    description = (
-        f"Scope: {title_scope}\n"
-        f"Games: {game_count}\n"
-        f"Generated: {generated_disp}"
+    summary_description = (
+        f"**Scope:** {title_scope}\n"
+        f"**Games:** {game_count}\n"
+        f"**Generated:** {generated_disp}"
     )
 
-    return [
-        {"content": f"🏀 NBA picks\n{description}"},
-        {"content": f"Moneyline Picks\n{_moneyline_table_text(frame)}"},
-        {"content": f"Over/Under Picks\n{_totals_table_text(frame)}"},
-    ]
+    return {
+        "content": "🏀 NBA picks",
+        "embeds": [
+            {
+                "title": "NBA Picks",
+                "description": summary_description,
+                "color": 3447003,
+            },
+            {
+                "title": "Moneyline Picks",
+                "description": _moneyline_table_text(frame),
+                "color": 3447003,
+            },
+            {
+                "title": "Over/Under Picks",
+                "description": _totals_table_text(frame),
+                "color": 3447003,
+            },
+        ],
+    }
 
 
 def main() -> None:
@@ -233,17 +248,16 @@ def main() -> None:
         raise FileNotFoundError(f"Predictions file not found: {predictions_path}")
 
     payload = json.loads(predictions_path.read_text(encoding="utf-8"))
-    discord_messages = build_discord_messages(payload)
+    discord_payload = build_discord_payload(payload)
 
     if os.getenv("DISCORD_DRY_RUN", "").strip() == "1":
-        print(json.dumps(discord_messages, indent=2))
+        print(json.dumps(discord_payload, indent=2))
         return
 
-    for msg in discord_messages:
-        response = requests.post(webhook, json=msg, timeout=20)
-        if response.status_code >= 400:
-            raise RuntimeError(f"Discord webhook failed ({response.status_code}): {response.text}")
-    print(f"Posted picks to Discord ({len(discord_messages)} message(s)).")
+    response = requests.post(webhook, json=discord_payload, timeout=20)
+    if response.status_code >= 400:
+        raise RuntimeError(f"Discord webhook failed ({response.status_code}): {response.text}")
+    print(f"Posted picks to Discord ({response.status_code}).")
 
 
 if __name__ == "__main__":
