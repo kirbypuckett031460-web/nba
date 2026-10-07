@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -85,28 +84,25 @@ def _format_cell(value: Any, width: int) -> str:
     return text.ljust(width)
 
 
-def _table_block(
-    headers: list[str],
-    rows: list[list[Any]],
-    widths: list[int],
-    max_chars: int = 980,
-) -> tuple[str, int]:
+def _auto_widths(headers: list[str], rows: list[list[Any]], max_col_width: int = 24) -> list[int]:
+    widths: list[int] = []
+    for idx, header in enumerate(headers):
+        col_max = len(str(header))
+        for row in rows:
+            if idx < len(row):
+                col_max = max(col_max, len(str(row[idx])))
+        widths.append(min(col_max, max_col_width))
+    return widths
+
+
+def _table_block(headers: list[str], rows: list[list[Any]], widths: list[int]) -> str:
     header_line = " | ".join(_format_cell(h, w) for h, w in zip(headers, widths))
     divider = "-+-".join("-" * w for w in widths)
     lines = [header_line, divider]
-    kept = 0
     for row in rows:
-        row_line = " | ".join(_format_cell(v, w) for v, w in zip(row, widths))
-        candidate = "\n".join(lines + [row_line])
-        if len(candidate) > max_chars and kept > 0:
-            break
-        lines.append(row_line)
-        kept += 1
-    omitted = max(len(rows) - kept, 0)
+        lines.append(" | ".join(_format_cell(v, w) for v, w in zip(row, widths)))
     block = "```text\n" + "\n".join(lines) + "\n```"
-    if omitted > 0:
-        block += f"\n…and {omitted} more."
-    return block, omitted
+    return block
 
 
 def _moneyline_table_text(frame: pd.DataFrame) -> str:
@@ -141,12 +137,9 @@ def _moneyline_table_text(frame: pd.DataFrame) -> str:
                 _fmt_pct(row.get("conf_prob")),
             ]
         )
-    text, _ = _table_block(
-        headers=["Game Time (ET)", "Away", "Home", "Mkt", "Fair", "Pick", "Edge", "Confidence"],
-        rows=rows,
-        widths=[14, 18, 18, 6, 6, 18, 8, 10],
-    )
-    return text
+    headers = ["Game Time (ET)", "Away", "Home", "Mkt", "Fair", "Pick", "Edge", "Confidence"]
+    widths = _auto_widths(headers, rows, max_col_width=24)
+    return _table_block(headers=headers, rows=rows, widths=widths)
 
 
 def _totals_table_text(frame: pd.DataFrame) -> str:
@@ -173,12 +166,9 @@ def _totals_table_text(frame: pd.DataFrame) -> str:
                 _fmt_pct(row.get("conf_prob")),
             ]
         )
-    text, _ = _table_block(
-        headers=["Game Time (ET)", "Away", "Home", "Line", "Proj", "Pick", "Edge", "Confidence"],
-        rows=rows,
-        widths=[14, 18, 18, 6, 6, 8, 8, 10],
-    )
-    return text
+    headers = ["Game Time (ET)", "Away", "Home", "Line", "Proj", "Pick", "Edge", "Confidence"]
+    widths = _auto_widths(headers, rows, max_col_width=24)
+    return _table_block(headers=headers, rows=rows, widths=widths)
 
 
 def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
@@ -209,17 +199,23 @@ def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]
     )
 
     return {
-        "content": "🏀 NBA picks refresh complete",
+        "content": "🏀 NBA picks",
         "embeds": [
             {
-                "title": "NBA Model Picks",
+                "title": "NBA Picks",
                 "description": description,
                 "color": 3447003,
-                "fields": [
-                    {"name": "Moneyline Picks", "value": _moneyline_table_text(frame), "inline": False},
-                    {"name": "Over/Under Picks", "value": _totals_table_text(frame), "inline": False},
-                ],
-            }
+            },
+            {
+                "title": "Moneyline Picks",
+                "description": _moneyline_table_text(frame),
+                "color": 3447003,
+            },
+            {
+                "title": "Over/Under Picks",
+                "description": _totals_table_text(frame),
+                "color": 3447003,
+            },
         ],
     }
 
