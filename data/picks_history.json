@@ -1,0 +1,35 @@
+[
+  {
+    "prediction_key": "26b036ff107f3c658258eaf4a6f26228",
+    "game_id": "26b036ff107f3c658258eaf4a6f26228",
+    "commence_time": "2026-10-20T19:00:00Z",
+    "home_team": "Detroit Pistons",
+    "away_team": "Boston Celtics",
+    "moneyline_pick": "Detroit Pistons ML",
+    "total_pick": "Over",
+    "total_line": 221.21428571428572,
+    "generated_at": "2026-10-07T16:20:04.250905+00:00"
+  },
+  {
+    "prediction_key": "2b042ddad3d3c6c6fe5b7005dc26c775",
+    "game_id": "2b042ddad3d3c6c6fe5b7005dc26c775",
+    "commence_time": "2026-10-20T23:00:00Z",
+    "home_team": "New York Knicks",
+    "away_team": "Philadelphia 76ers",
+    "moneyline_pick": "Philadelphia 76ers ML",
+    "total_pick": "Under",
+    "total_line": 231.64285714285714,
+    "generated_at": "2026-10-07T16:20:04.250905+00:00"
+  },
+  {
+    "prediction_key": "bccd283de56915e29af1788beb0abfc9",
+    "game_id": "bccd283de56915e29af1788beb0abfc9",
+    "commence_time": "2026-10-21T01:30:00Z",
+    "home_team": "San Antonio Spurs",
+    "away_team": "Oklahoma City Thunder",
+    "moneyline_pick": "Oklahoma City Thunder ML",
+    "total_pick": "Under",
+    "total_line": 230.71428571428572,
+    "generated_at": "2026-10-07T16:20:04.250905+00:00"
+  }
+]
