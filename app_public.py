@@ -554,7 +554,7 @@ def _ou_pick_color(value: str | None) -> str:
     if pick == "over":
         return "background-color: #0f8f6f; color: #eafff8; font-weight: 700;"
     if pick == "under":
-        return "background-color: #5b1f2f; color: #ffd9e3; font-weight: 700;"
+        return "background-color: #7a2e43; color: #ffe3eb; font-weight: 700;"
     return "background-color: #2e3b54; color: #dbe8ff; font-weight: 700;"
 
 

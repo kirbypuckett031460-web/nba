@@ -220,7 +220,7 @@ def _pick_bg(value: Any) -> tuple[int, int, int]:
     if text == "OVER":
         return (15, 143, 111)
     if text == "UNDER":
-        return (91, 31, 47)
+        return (122, 46, 67)
     return (30, 95, 180)
 
 
