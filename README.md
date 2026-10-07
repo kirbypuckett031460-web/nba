@@ -86,6 +86,7 @@ Workflow file: `.github/workflows/nba_daily_refresh.yml`
 Set repo secret:
 
 - `ODDS_API_KEY`
+- `DISCORD_WEBHOOK_URL` (or `DISCORD_WEBHOOK`) to post refreshed picks to Discord from CI
 
 ## Notes for embedding
 
