@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-10-07T17:36:56.679155+00:00",
+  "generated_at": "2026-10-07T22:43:33.735258+00:00",
   "games_count": 3,
   "metrics": {
-    "moneyline_auc": 0.7447935517999833,
-    "moneyline_log_loss": 0.6030280796437746,
-    "total_mae": 15.384455442165795,
-    "sample_games": 6605.0
+    "moneyline_auc": 0.7116320021263872,
+    "moneyline_log_loss": 0.6253374750203076,
+    "total_mae": 15.117641435001993,
+    "sample_games": 5502.0
   },
   "filter_date": "2026-10-20",
   "filter_timezone": "America/New_York",
@@ -35,6 +35,5 @@
       "ytd_pushes": 0
     }
   },
-  "refresh_status": "stale_odds_auth_failed",
-  "refresh_message": "The Odds API rejected the supplied key (HTTP 401). Confirm your GitHub Actions secret value is valid. Response: {\"message\":\"Usage quota has been reached. See usage plans at https://the-odds-api.com\",\"error_code\":\"OUT_OF_USAGE_CREDITS\",\"details_url\":\"https://the-odds-api.com/liveapi/guides/v4/api-error-codes.html#out-of-usage-credits\"}"
+  "refresh_status": "fresh"
 }
