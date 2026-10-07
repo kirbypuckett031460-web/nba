@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-07T17:15:22.191506+00:00",
-  "model_generated_at": "2026-10-07T17:15:21.243001+00:00",
+  "generated_at": "2026-10-07T17:22:53.478883+00:00",
+  "model_generated_at": "2026-10-07T17:22:52.505317+00:00",
   "model_metrics": {
     "moneyline_auc": 0.7048356859797126,
     "moneyline_log_loss": 0.6352581549971871,
