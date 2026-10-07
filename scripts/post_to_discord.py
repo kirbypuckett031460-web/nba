@@ -297,7 +297,7 @@ def _render_table_image(
                 bg = _conf_bg(row.get("__conf_val"))
             draw.rectangle([cx, y, cx + w, y + row_h], fill=bg, outline=(48, 58, 78))
             text = str(row.get(h, "—"))
-            draw.text((cx + 8, y + 8), text, fill=(232, 238, 252), font=font_small if h in {"Away", "Home", "Pick"} else font)
+            draw.text((cx + 8, y + 8), text, fill=(232, 238, 252), font=font_small)
             cx += w
         y += row_h
 
