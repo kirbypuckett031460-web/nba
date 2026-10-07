@@ -95,13 +95,27 @@ def _auto_widths(headers: list[str], rows: list[list[Any]], max_col_width: int =
     return widths
 
 
-def _table_block(headers: list[str], rows: list[list[Any]], widths: list[int]) -> str:
+def _table_block(
+    headers: list[str],
+    rows: list[list[Any]],
+    widths: list[int],
+    max_chars: int = 1800,
+) -> str:
     header_line = " | ".join(_format_cell(h, w) for h, w in zip(headers, widths))
     divider = "-+-".join("-" * w for w in widths)
     lines = [header_line, divider]
+    kept = 0
     for row in rows:
-        lines.append(" | ".join(_format_cell(v, w) for v, w in zip(row, widths)))
+        row_line = " | ".join(_format_cell(v, w) for v, w in zip(row, widths))
+        candidate = "```text\n" + "\n".join(lines + [row_line]) + "\n```"
+        if len(candidate) > max_chars and kept > 0:
+            break
+        lines.append(row_line)
+        kept += 1
     block = "```text\n" + "\n".join(lines) + "\n```"
+    omitted = max(len(rows) - kept, 0)
+    if omitted > 0:
+        block += f"\n…and {omitted} more game(s)."
     return block
 
 
