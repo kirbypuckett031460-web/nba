@@ -173,6 +173,75 @@ TEAM_ALIASES: dict[str, str] = {
     "WASHINGTON WIZARDS": "WAS",
 }
 
+NHL_ABBR_TO_FULL: dict[str, str] = {
+    "ANA": "Anaheim Ducks",
+    "ARI": "Arizona Coyotes",
+    "BOS": "Boston Bruins",
+    "BUF": "Buffalo Sabres",
+    "CGY": "Calgary Flames",
+    "CAR": "Carolina Hurricanes",
+    "CHI": "Chicago Blackhawks",
+    "COL": "Colorado Avalanche",
+    "CBJ": "Columbus Blue Jackets",
+    "DAL": "Dallas Stars",
+    "DET": "Detroit Red Wings",
+    "EDM": "Edmonton Oilers",
+    "FLA": "Florida Panthers",
+    "LAK": "Los Angeles Kings",
+    "MIN": "Minnesota Wild",
+    "MTL": "Montreal Canadiens",
+    "NSH": "Nashville Predators",
+    "NJD": "New Jersey Devils",
+    "NYI": "New York Islanders",
+    "NYR": "New York Rangers",
+    "OTT": "Ottawa Senators",
+    "PHI": "Philadelphia Flyers",
+    "PIT": "Pittsburgh Penguins",
+    "SJS": "San Jose Sharks",
+    "SEA": "Seattle Kraken",
+    "STL": "St. Louis Blues",
+    "TBL": "Tampa Bay Lightning",
+    "TOR": "Toronto Maple Leafs",
+    "UTA": "Utah Hockey Club",
+    "VAN": "Vancouver Canucks",
+    "VGK": "Vegas Golden Knights",
+    "WSH": "Washington Capitals",
+    "WPG": "Winnipeg Jets",
+}
+
+NBA_ABBR_TO_FULL: dict[str, str] = {
+    "ATL": "Atlanta Hawks",
+    "BKN": "Brooklyn Nets",
+    "BOS": "Boston Celtics",
+    "CHA": "Charlotte Hornets",
+    "CHI": "Chicago Bulls",
+    "CLE": "Cleveland Cavaliers",
+    "DAL": "Dallas Mavericks",
+    "DEN": "Denver Nuggets",
+    "DET": "Detroit Pistons",
+    "GSW": "Golden State Warriors",
+    "HOU": "Houston Rockets",
+    "IND": "Indiana Pacers",
+    "LAC": "Los Angeles Clippers",
+    "LAL": "Los Angeles Lakers",
+    "MEM": "Memphis Grizzlies",
+    "MIA": "Miami Heat",
+    "MIL": "Milwaukee Bucks",
+    "MIN": "Minnesota Timberwolves",
+    "NOP": "New Orleans Pelicans",
+    "NYK": "New York Knicks",
+    "OKC": "Oklahoma City Thunder",
+    "ORL": "Orlando Magic",
+    "PHI": "Philadelphia 76ers",
+    "PHX": "Phoenix Suns",
+    "POR": "Portland Trail Blazers",
+    "SAC": "Sacramento Kings",
+    "SAS": "San Antonio Spurs",
+    "TOR": "Toronto Raptors",
+    "UTA": "Utah Jazz",
+    "WAS": "Washington Wizards",
+}
+
 
 def _prediction_file_path(settings: AppSettings) -> str:
     path = str(settings.predictions_path).replace("\\", "/")
@@ -308,6 +377,48 @@ def _team_color_style(team: str | None) -> str:
     return "background-color: #202b3e; color: #d7e3fa; font-weight: 700;"
 
 
+def _looks_like_abbr(name: str | None) -> bool:
+    if name is None:
+        return False
+    text = str(name).strip()
+    return 2 <= len(text) <= 5 and text.replace("-", "").isalpha() and text.upper() == text
+
+
+def _infer_league_from_slate(frame: pd.DataFrame) -> str:
+    teams = pd.concat(
+        [
+            frame.get("away_team", pd.Series(dtype=object)).astype(str),
+            frame.get("home_team", pd.Series(dtype=object)).astype(str),
+        ],
+        ignore_index=True,
+    )
+    abbrs = [t.strip().upper() for t in teams if _looks_like_abbr(t)]
+    if not abbrs:
+        return "unknown"
+    nhl_hits = sum(1 for t in abbrs if t in NHL_ABBR_TO_FULL)
+    nba_hits = sum(1 for t in abbrs if t in NBA_ABBR_TO_FULL)
+    if nhl_hits > nba_hits:
+        return "nhl"
+    if nba_hits > nhl_hits:
+        return "nba"
+    return "unknown"
+
+
+def _full_name(team: str | None, league: str) -> str:
+    if team is None:
+        return ""
+    text = str(team).strip()
+    if not _looks_like_abbr(text):
+        return text
+    key = text.upper()
+    if league == "nhl":
+        return NHL_ABBR_TO_FULL.get(key, text)
+    if league == "nba":
+        return NBA_ABBR_TO_FULL.get(key, text)
+    # Fallback: prefer NHL mapping if available, otherwise NBA.
+    return NHL_ABBR_TO_FULL.get(key, NBA_ABBR_TO_FULL.get(key, text))
+
+
 performance = payload.get("performance", {})
 moneyline_perf = performance.get("moneyline", {})
 totals_perf = performance.get("totals", {})
@@ -336,7 +447,11 @@ with metric_cols[3]:
 
 tab_ml, tab_ou = st.tabs(["Moneyline Picks", "Over/Under Picks"])
 
+league_hint = _infer_league_from_slate(df)
+
 ml = df.copy()
+ml["away_display"] = ml["away_team"].map(lambda x: _full_name(x, league_hint))
+ml["home_display"] = ml["home_team"].map(lambda x: _full_name(x, league_hint))
 ml["pick_team"] = ml["moneyline_pick"].astype(str).str.replace(" ML", "", regex=False)
 is_pass = ml["pick_team"].str.contains("Pass", case=False, na=False)
 is_home_pick = ml["pick_team"].eq(ml["home_team"])
@@ -358,14 +473,20 @@ ml["edge_text"] = ml["best_moneyline_edge_pct"].map(lambda x: f"{x:+.1f}%" if pd
 ml["confidence_prob"] = ml["fair_prob"].map(_to_prob)
 ml["confidence"] = ml["confidence_prob"].map(lambda x: f"{x*100:.1f}%" if x is not None else "—")
 ml["mkt_text"] = ml["mkt"].map(_american_text)
+ml["pick_display"] = np.where(
+    is_home_pick,
+    ml["home_display"],
+    np.where(is_away_pick, ml["away_display"], ml["pick_team"].map(lambda x: _full_name(x, league_hint))),
+)
+ml.loc[is_pass, "pick_display"] = "Pass"
 ml_table = ml[
     [
         "game_time_et",
-        "away_team",
-        "home_team",
+        "away_display",
+        "home_display",
         "mkt_text",
         "fair",
-        "pick_team",
+        "pick_display",
         "edge_text",
         "confidence",
         "best_moneyline_edge_pct",
@@ -374,11 +495,11 @@ ml_table = ml[
 ].rename(
     columns={
         "game_time_et": "Game Time (ET)",
-        "away_team": "Away",
-        "home_team": "Home",
+        "away_display": "Away",
+        "home_display": "Home",
         "mkt_text": "Mkt",
         "fair": "Fair",
-        "pick_team": "Pick",
+        "pick_display": "Pick",
         "edge_text": "Edge",
         "confidence": "Confidence",
     }
@@ -421,6 +542,8 @@ with tab_ml:
     st.dataframe(ml_styler, use_container_width=True)
 
 ou = df.copy()
+ou["away_display"] = ou["away_team"].map(lambda x: _full_name(x, league_hint))
+ou["home_display"] = ou["home_team"].map(lambda x: _full_name(x, league_hint))
 ou["pick"] = ou["total_pick"]
 ou["edge_raw"] = np.where(
     ou["pick"].eq("Over"),
@@ -438,8 +561,8 @@ ou["confidence"] = ou["confidence_prob"].map(lambda x: f"{x*100:.1f}%" if x is n
 ou_table = ou[
     [
         "game_time_et",
-        "away_team",
-        "home_team",
+        "away_display",
+        "home_display",
         "total_line",
         "model_projected_total",
         "pick",
@@ -451,8 +574,8 @@ ou_table = ou[
 ].rename(
     columns={
         "game_time_et": "Game Time (ET)",
-        "away_team": "Away",
-        "home_team": "Home",
+        "away_display": "Away",
+        "home_display": "Home",
         "total_line": "Line",
         "model_projected_total": "Projection",
         "pick": "Pick",
