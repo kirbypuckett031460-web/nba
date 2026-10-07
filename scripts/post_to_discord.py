@@ -6,9 +6,14 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import requests
 from PIL import Image, ImageDraw, ImageFont
+
+
+def _normalized_pick(value: Any) -> str:
+    return " ".join(str(value or "").strip().lower().split())
 
 
 def _pick_confidence_prob(row: pd.Series) -> float | None:
@@ -30,10 +35,10 @@ def _pick_confidence_prob(row: pd.Series) -> float | None:
 
 
 def _tot_confidence_prob(row: pd.Series) -> float | None:
-    pick = str(row.get("total_pick", ""))
-    if pick == "Over":
+    pick = _normalized_pick(row.get("total_pick"))
+    if pick.startswith("over"):
         val = row.get("model_over_prob")
-    elif pick == "Under":
+    elif pick.startswith("under"):
         val = row.get("model_under_prob")
     else:
         return None
@@ -162,9 +167,11 @@ def _totals_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
     if frame.empty:
         return []
     tot = frame.copy()
-    tot["edge_raw"] = tot.apply(
-        lambda r: r.get("over_edge_pct") if str(r.get("total_pick", "")) == "Over" else r.get("under_edge_pct"),
-        axis=1,
+    tot["pick_norm"] = tot["total_pick"].map(_normalized_pick)
+    tot["edge_raw"] = np.where(
+        tot["pick_norm"].str.startswith("over"),
+        tot["over_edge_pct"],
+        np.where(tot["pick_norm"].str.startswith("under"), tot["under_edge_pct"], np.nan),
     )
     tot["conf_prob"] = tot.apply(_tot_confidence_prob, axis=1)
     tot = tot.sort_values("commence_time", ascending=True, na_position="last")
@@ -216,10 +223,10 @@ def _conf_bg(conf_val: Any) -> tuple[int, int, int]:
 
 
 def _pick_bg(value: Any) -> tuple[int, int, int]:
-    text = str(value or "").upper()
-    if text == "OVER":
+    text = _normalized_pick(value)
+    if text.startswith("over"):
         return (15, 143, 111)
-    if text == "UNDER":
+    if text.startswith("under"):
         return (122, 46, 67)
     return (30, 95, 180)
 
