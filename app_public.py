@@ -172,6 +172,17 @@ TEAM_ALIASES: dict[str, str] = {
     "WASHINGTON WIZARDS": "WAS",
 }
 
+
+def _normalize_team_key(value: str | None) -> str:
+    if value is None:
+        return ""
+    # Normalize spacing/punctuation so label variations still map to team colors.
+    return " ".join(str(value).strip().upper().replace(".", "").split())
+
+
+NORMALIZED_TEAM_ALIASES: dict[str, str] = {_normalize_team_key(k): v for k, v in TEAM_ALIASES.items()}
+
+
 NHL_ABBR_TO_FULL: dict[str, str] = {
     "ANA": "Anaheim Ducks",
     "ARI": "Arizona Coyotes",
@@ -370,18 +381,18 @@ def _to_prob(value: float | int | None) -> float | None:
 
 def _team_color_style(team: str | None) -> str:
     if team is None:
-        return "background-color: #202b3e; color: #d7e3fa;"
-    key = str(team).strip().upper()
-    key = TEAM_ALIASES.get(key, key)
+        return "background-color: #202b3e; color: #ffffff; font-weight: 700;"
+    key = _normalize_team_key(team)
+    key = NORMALIZED_TEAM_ALIASES.get(key, key)
     if key in TEAM_COLORS:
-        bg, fg = TEAM_COLORS[key]
-        return f"background-color: {bg}; color: {fg}; font-weight: 700;"
+        bg, _fg = TEAM_COLORS[key]
+        return f"background-color: {bg}; color: #ffffff; font-weight: 700;"
     # fallback: try first token of full name or unchanged uppercase
     token = key.split()[-1] if " " in key else key
     if token in TEAM_COLORS:
-        bg, fg = TEAM_COLORS[token]
-        return f"background-color: {bg}; color: {fg}; font-weight: 700;"
-    return "background-color: #202b3e; color: #d7e3fa; font-weight: 700;"
+        bg, _fg = TEAM_COLORS[token]
+        return f"background-color: {bg}; color: #ffffff; font-weight: 700;"
+    return "background-color: #202b3e; color: #ffffff; font-weight: 700;"
 
 
 def _looks_like_abbr(name: str | None) -> bool:
@@ -543,7 +554,7 @@ def _ou_pick_color(value: str | None) -> str:
     if pick == "over":
         return "background-color: #0f8f6f; color: #eafff8; font-weight: 700;"
     if pick == "under":
-        return "background-color: #5b1f2f; color: #ffd9e3; font-weight: 700;"
+        return "background-color: #7a2e43; color: #ffe3eb; font-weight: 700;"
     return "background-color: #2e3b54; color: #dbe8ff; font-weight: 700;"
 
 
