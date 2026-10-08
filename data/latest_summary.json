@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-10-07T22:49:20.300959+00:00",
-  "games_count": 3,
+  "generated_at": "2026-10-08T12:56:26.444105+00:00",
+  "games_count": 0,
   "metrics": {
-    "moneyline_auc": 0.6801142430066197,
-    "moneyline_log_loss": 0.6508858730853123,
-    "total_mae": 15.85014528637287,
-    "sample_games": 6142.0
+    "moneyline_auc": 0.7048356859797126,
+    "moneyline_log_loss": 0.6352581549971871,
+    "total_mae": 15.756331126502282,
+    "sample_games": 6605.0
   },
-  "filter_date": "2026-10-20",
+  "filter_date": "2026-10-08",
   "filter_timezone": "America/New_York",
   "performance": {
     "moneyline": {
