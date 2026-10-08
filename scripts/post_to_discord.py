@@ -6,9 +6,105 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import requests
 from PIL import Image, ImageDraw, ImageFont
+
+
+NBA_TEAM_COLORS: dict[str, tuple[int, int, int]] = {
+    "ATL": (224, 58, 62),
+    "BKN": (17, 17, 17),
+    "BOS": (0, 122, 51),
+    "CHA": (29, 17, 96),
+    "CHI": (206, 17, 65),
+    "CLE": (134, 0, 56),
+    "DAL": (0, 83, 140),
+    "DEN": (14, 34, 64),
+    "DET": (206, 17, 65),
+    "GSW": (29, 66, 138),
+    "HOU": (206, 17, 65),
+    "IND": (0, 45, 98),
+    "LAC": (200, 16, 46),
+    "LAL": (85, 37, 131),
+    "MEM": (93, 118, 169),
+    "MIA": (152, 0, 46),
+    "MIL": (0, 71, 27),
+    "MIN": (12, 35, 64),
+    "NOP": (12, 35, 64),
+    "NYK": (0, 107, 182),
+    "OKC": (0, 122, 193),
+    "ORL": (0, 119, 192),
+    "PHI": (0, 107, 182),
+    "PHX": (29, 17, 96),
+    "POR": (224, 58, 62),
+    "SAC": (90, 45, 129),
+    "SAS": (17, 17, 17),
+    "TOR": (206, 17, 65),
+    "UTA": (0, 43, 92),
+    "WAS": (0, 43, 92),
+}
+
+NBA_TEAM_NAME_TO_ABBR_RAW: dict[str, str] = {
+    "Atlanta Hawks": "ATL",
+    "Brooklyn Nets": "BKN",
+    "Boston Celtics": "BOS",
+    "Charlotte Hornets": "CHA",
+    "Chicago Bulls": "CHI",
+    "Cleveland Cavaliers": "CLE",
+    "Dallas Mavericks": "DAL",
+    "Denver Nuggets": "DEN",
+    "Detroit Pistons": "DET",
+    "Golden State Warriors": "GSW",
+    "Houston Rockets": "HOU",
+    "Indiana Pacers": "IND",
+    "Los Angeles Clippers": "LAC",
+    "Los Angeles Lakers": "LAL",
+    "Memphis Grizzlies": "MEM",
+    "Miami Heat": "MIA",
+    "Milwaukee Bucks": "MIL",
+    "Minnesota Timberwolves": "MIN",
+    "New Orleans Pelicans": "NOP",
+    "New York Knicks": "NYK",
+    "Oklahoma City Thunder": "OKC",
+    "Orlando Magic": "ORL",
+    "Philadelphia 76ers": "PHI",
+    "Phoenix Suns": "PHX",
+    "Portland Trail Blazers": "POR",
+    "Sacramento Kings": "SAC",
+    "San Antonio Spurs": "SAS",
+    "Toronto Raptors": "TOR",
+    "Utah Jazz": "UTA",
+    "Washington Wizards": "WAS",
+}
+
+
+def _normalized_pick(value: Any) -> str:
+    return " ".join(str(value or "").strip().lower().split())
+
+
+def _normalized_team_key(value: Any) -> str:
+    return " ".join(str(value or "").strip().upper().replace(".", "").split())
+
+
+NBA_TEAM_NAME_TO_ABBR: dict[str, str] = {
+    _normalized_team_key(name): abbr for name, abbr in NBA_TEAM_NAME_TO_ABBR_RAW.items()
+}
+
+
+def _team_to_abbr(value: Any) -> str:
+    key = _normalized_team_key(value)
+    if not key:
+        return "—"
+    if key in NBA_TEAM_COLORS:
+        return key
+    if key in NBA_TEAM_NAME_TO_ABBR:
+        return NBA_TEAM_NAME_TO_ABBR[key]
+    key_compact = key.replace("-NBA", "").replace(" NBA", "")
+    if key_compact in NBA_TEAM_COLORS:
+        return key_compact
+    text = str(value or "").strip()
+    return text if text else "—"
 
 
 def _pick_confidence_prob(row: pd.Series) -> float | None:
@@ -30,10 +126,10 @@ def _pick_confidence_prob(row: pd.Series) -> float | None:
 
 
 def _tot_confidence_prob(row: pd.Series) -> float | None:
-    pick = str(row.get("total_pick", ""))
-    if pick == "Over":
+    pick = _normalized_pick(row.get("total_pick"))
+    if pick.startswith("over"):
         val = row.get("model_over_prob")
-    elif pick == "Under":
+    elif pick.startswith("under"):
         val = row.get("model_under_prob")
     else:
         return None
@@ -141,6 +237,7 @@ def _moneyline_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
     ml = ml.sort_values("commence_time", ascending=True, na_position="last")
     rows: list[dict[str, Any]] = []
     for _, row in ml.iterrows():
+        pick_abbr = _team_to_abbr(row.get("pick_team"))
         rows.append(
             {
                 "Game Time (ET)": _to_et(row.get("commence_time")),
@@ -148,11 +245,13 @@ def _moneyline_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
                 "Home": row.get("home_team"),
                 "Mkt": _fmt_american(row.get("mkt")),
                 "Fair": row.get("fair"),
-                "Pick": row.get("pick_team"),
+                "Pick": pick_abbr,
                 "Edge": _fmt_edge(row.get("best_moneyline_edge_pct")),
                 "Confidence": _fmt_pct(row.get("conf_prob")),
                 "__edge_val": row.get("best_moneyline_edge_pct"),
                 "__conf_val": row.get("conf_prob"),
+                "__pick_type": "moneyline",
+                "__pick_abbr": pick_abbr,
             }
         )
     return rows
@@ -162,9 +261,11 @@ def _totals_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
     if frame.empty:
         return []
     tot = frame.copy()
-    tot["edge_raw"] = tot.apply(
-        lambda r: r.get("over_edge_pct") if str(r.get("total_pick", "")) == "Over" else r.get("under_edge_pct"),
-        axis=1,
+    tot["pick_norm"] = tot["total_pick"].map(_normalized_pick)
+    tot["edge_raw"] = np.where(
+        tot["pick_norm"].str.startswith("over"),
+        tot["over_edge_pct"],
+        np.where(tot["pick_norm"].str.startswith("under"), tot["under_edge_pct"], np.nan),
     )
     tot["conf_prob"] = tot.apply(_tot_confidence_prob, axis=1)
     tot = tot.sort_values("commence_time", ascending=True, na_position="last")
@@ -182,6 +283,7 @@ def _totals_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
                 "Confidence": _fmt_pct(row.get("conf_prob")),
                 "__edge_val": row.get("edge_raw"),
                 "__conf_val": row.get("conf_prob"),
+                "__pick_type": "total",
             }
         )
     return rows
@@ -215,11 +317,18 @@ def _conf_bg(conf_val: Any) -> tuple[int, int, int]:
     return (45, 62, 87)
 
 
-def _pick_bg(value: Any) -> tuple[int, int, int]:
-    text = str(value or "").upper()
-    if text == "OVER":
+def _pick_bg(value: Any, row: dict[str, Any] | None = None) -> tuple[int, int, int]:
+    if row and row.get("__pick_type") == "moneyline":
+        abbr = str(row.get("__pick_abbr") or _team_to_abbr(value)).upper()
+        team_color = NBA_TEAM_COLORS.get(abbr)
+        if team_color:
+            return team_color
+        return (30, 95, 180)
+
+    text = _normalized_pick(value)
+    if text.startswith("over"):
         return (15, 143, 111)
-    if text == "UNDER":
+    if text.startswith("under"):
         return (122, 46, 67)
     return (30, 95, 180)
 
@@ -290,7 +399,7 @@ def _render_table_image(
             w = widths[h]
             bg = base_bg
             if h == "Pick":
-                bg = _pick_bg(row.get(h))
+                bg = _pick_bg(row.get(h), row=row)
             elif h == "Edge":
                 bg = _edge_bg(row.get("__edge_val"))
             elif h == "Confidence":
@@ -338,10 +447,6 @@ def main() -> None:
         print(f"moneyline_rows={len(ml_rows)} totals_rows={len(ou_rows)}")
         return
 
-    response = requests.post(webhook, json=discord_payload, timeout=20)
-    if response.status_code >= 400:
-        raise RuntimeError(f"Discord webhook failed ({response.status_code}): {response.text}")
-
     with tempfile.TemporaryDirectory(prefix="discord-picks-") as tmp_dir:
         tmp_path = Path(tmp_dir)
         ml_img = tmp_path / "moneyline-picks.png"
@@ -359,30 +464,34 @@ def main() -> None:
             ou_img,
         )
 
-        for title, img_path, attachment_name in [
-            ("Moneyline Picks", ml_img, "moneyline-picks.png"),
-            ("Over/Under Picks", ou_img, "totals-picks.png"),
-        ]:
-            with img_path.open("rb") as file_obj:
-                payload_json = {
-                    "embeds": [
-                        {
-                            "title": title,
-                            "color": 3447003,
-                            "image": {"url": f"attachment://{attachment_name}"},
-                        }
-                    ]
-                }
-                upload = requests.post(
-                    webhook,
-                    data={"payload_json": json.dumps(payload_json)},
-                    files={"file": (attachment_name, file_obj, "image/png")},
-                    timeout=30,
-                )
-                if upload.status_code >= 400:
-                    raise RuntimeError(f"Discord image post failed ({upload.status_code}): {upload.text}")
+        payload_json = dict(discord_payload)
+        payload_json["embeds"] = [
+            {
+                "title": "Moneyline Picks",
+                "color": 3447003,
+                "image": {"url": "attachment://moneyline-picks.png"},
+            },
+            {
+                "title": "Over/Under Picks",
+                "color": 3447003,
+                "image": {"url": "attachment://totals-picks.png"},
+            },
+        ]
 
-    print("Posted picks to Discord with embedded table images.")
+        with ml_img.open("rb") as ml_file, ou_img.open("rb") as ou_file:
+            upload = requests.post(
+                webhook,
+                data={"payload_json": json.dumps(payload_json)},
+                files={
+                    "file0": ("moneyline-picks.png", ml_file, "image/png"),
+                    "file1": ("totals-picks.png", ou_file, "image/png"),
+                },
+                timeout=30,
+            )
+        if upload.status_code >= 400:
+            raise RuntimeError(f"Discord webhook failed ({upload.status_code}): {upload.text}")
+
+    print("Posted picks to Discord with one message and embedded table images.")
 
 
 if __name__ == "__main__":
