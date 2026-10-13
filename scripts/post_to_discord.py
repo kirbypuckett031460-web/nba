@@ -329,7 +329,7 @@ def _pick_bg(value: Any, row: dict[str, Any] | None = None) -> tuple[int, int, i
     if text.startswith("over"):
         return (15, 143, 111)
     if text.startswith("under"):
-        return (122, 46, 67)
+        return (206, 17, 65)
     return (30, 95, 180)
 
 
