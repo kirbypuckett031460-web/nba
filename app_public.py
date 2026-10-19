@@ -379,6 +379,19 @@ def _to_prob(value: float | int | None) -> float | None:
     return val if 0.0 <= val <= 1.0 else None
 
 
+def _to_half_line_text(value: float | int | None) -> str:
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return "—"
+    snapped = round(float(value) * 2.0) / 2.0
+    return f"{snapped:.1f}"
+
+
+def _to_whole_number_text(value: float | int | None) -> str:
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return "—"
+    return f"{int(round(float(value)))}"
+
+
 def _team_color_style(team: str | None) -> str:
     if team is None:
         return "background-color: #202b3e; color: #ffffff; font-weight: 700;"
@@ -585,13 +598,15 @@ ou["confidence_raw"] = np.where(
 ou["confidence_prob"] = ou["confidence_raw"].map(_to_prob)
 ou["edge"] = ou["edge_raw"].map(lambda x: f"{x:+.1f}%" if pd.notna(x) else "—")
 ou["confidence"] = ou["confidence_prob"].map(lambda x: f"{x*100:.1f}%" if x is not None else "—")
+ou["line_display"] = ou["total_line"].map(_to_half_line_text)
+ou["projection_display"] = ou["model_projected_total"].map(_to_whole_number_text)
 ou_table = ou[
     [
         "game_time_et",
         "away_display",
         "home_display",
-        "total_line",
-        "model_projected_total",
+        "line_display",
+        "projection_display",
         "pick",
         "edge",
         "confidence",
@@ -603,8 +618,8 @@ ou_table = ou[
         "game_time_et": "Game Time (ET)",
         "away_display": "Away",
         "home_display": "Home",
-        "total_line": "Line",
-        "model_projected_total": "Projection",
+        "line_display": "Line",
+        "projection_display": "Projection",
         "pick": "Pick",
         "edge": "Edge",
         "confidence": "Confidence",

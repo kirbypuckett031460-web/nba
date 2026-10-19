@@ -18,7 +18,7 @@ class AppSettings:
     odds_api_key: str = _first_env("ODDS_API_KEY", "THE_ODDS_API_KEY", "ODDSAPI_KEY")
     odds_regions: str = os.getenv("ODDS_REGIONS", "us")
     odds_markets: str = os.getenv("ODDS_MARKETS", "h2h,totals")
-    odds_bookmakers: str = os.getenv("ODDS_BOOKMAKERS", "")
+    odds_bookmakers: str = os.getenv("ODDS_BOOKMAKERS", "fanduel")
     model_path: Path = Path(os.getenv("MODEL_PATH", "data/model_artifact.joblib"))
     predictions_path: Path = Path(os.getenv("PREDICTIONS_PATH", "data/latest_predictions.json"))
     picks_history_path: Path = Path(os.getenv("PICKS_HISTORY_PATH", "data/picks_history.json"))

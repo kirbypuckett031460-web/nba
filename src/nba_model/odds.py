@@ -39,6 +39,16 @@ def _as_timestamp(iso_ts: str) -> datetime:
     return datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
 
 
+def _snap_total_line(value: float | int | None) -> float | None:
+    if value is None:
+        return None
+    value_f = float(value)
+    if np.isnan(value_f):
+        return None
+    # NBA totals are typically half-point increments at books like FanDuel.
+    return round(value_f * 2.0) / 2.0
+
+
 def fetch_raw_odds(
     api_key: str,
     regions: str = "us",
@@ -112,7 +122,7 @@ def _consensus_total(bookmakers: list[dict[str, Any]]) -> tuple[float | None, fl
                     over_prices.append(float(price))
                 elif name == "under":
                     under_prices.append(float(price))
-    total_consensus = float(np.mean(totals)) if totals else None
+    total_consensus = _snap_total_line(float(np.mean(totals))) if totals else None
     over_consensus = float(np.mean(over_prices)) if over_prices else None
     under_consensus = float(np.mean(under_prices)) if under_prices else None
     return total_consensus, over_consensus, under_consensus
