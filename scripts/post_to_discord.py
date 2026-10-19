@@ -168,6 +168,19 @@ def _fmt_float(value: Any, decimals: int = 1) -> str:
     return f"{float(value):.{decimals}f}"
 
 
+def _fmt_half_line(value: Any) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    snapped = round(float(value) * 2.0) / 2.0
+    return f"{snapped:.1f}"
+
+
+def _fmt_whole(value: Any) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    return str(int(round(float(value))))
+
+
 def _to_et(ts: Any) -> str:
     dt = pd.to_datetime(ts, utc=True, errors="coerce")
     if pd.isna(dt):
@@ -276,8 +289,8 @@ def _totals_table_data(frame: pd.DataFrame) -> list[dict[str, Any]]:
                 "Game Time (ET)": _to_et(row.get("commence_time")),
                 "Away": row.get("away_team"),
                 "Home": row.get("home_team"),
-                "Line": _fmt_float(row.get("total_line"), 1),
-                "Proj": _fmt_float(row.get("model_projected_total"), 1),
+                "Line": _fmt_half_line(row.get("total_line")),
+                "Proj": _fmt_whole(row.get("model_projected_total")),
                 "Pick": row.get("total_pick"),
                 "Edge": _fmt_edge(row.get("edge_raw")),
                 "Confidence": _fmt_pct(row.get("conf_prob")),

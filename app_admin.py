@@ -169,6 +169,14 @@ if not games:
 df = pd.DataFrame(games)
 df["commence_time"] = pd.to_datetime(df["commence_time"], utc=True, errors="coerce")
 df["game_time_local"] = df["commence_time"].dt.tz_convert("America/New_York").dt.strftime("%Y-%m-%d %I:%M %p ET")
+if "total_line" in df.columns:
+    df["total_line"] = pd.to_numeric(df["total_line"], errors="coerce").map(
+        lambda v: round(float(v) * 2.0) / 2.0 if pd.notna(v) else v
+    )
+if "model_projected_total" in df.columns:
+    df["model_projected_total"] = pd.to_numeric(df["model_projected_total"], errors="coerce").map(
+        lambda v: int(round(float(v))) if pd.notna(v) else v
+    )
 
 display_cols = [
     "game_time_local",

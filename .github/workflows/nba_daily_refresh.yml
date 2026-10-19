@@ -67,6 +67,7 @@ jobs:
           PREDICTIONS_PATH: data/latest_predictions.json
           LOOKBACK_SEASONS: "5"
           MIN_EDGE_PCT: "2.0"
+          ODDS_BOOKMAKERS: "fanduel"
           TARGET_DATE: ${{ github.event.inputs.target_date }}
           TARGET_TIMEZONE: ${{ github.event.inputs.target_timezone || 'America/New_York' }}
         run: |
