@@ -447,19 +447,23 @@ def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]
     perf = predictions_payload.get("performance", {}) if isinstance(predictions_payload, dict) else {}
     moneyline = perf.get("moneyline", {}) if isinstance(perf, dict) else {}
     totals = perf.get("totals", {}) if isinstance(perf, dict) else {}
-    records_embed = {
-        "title": "Records",
-        "color": 3447003,
-        "fields": [
-            {"name": "Moneyline Yesterday", "value": _record_text(moneyline, "yesterday_record"), "inline": True},
-            {"name": "Moneyline YTD", "value": _record_text(moneyline, "ytd_record"), "inline": True},
-            {"name": "Totals Yesterday", "value": _record_text(totals, "yesterday_record"), "inline": True},
-            {"name": "Totals YTD", "value": _record_text(totals, "ytd_record"), "inline": True},
-        ],
-    }
+    content_lines = [
+        "🏀 NBA picks",
+        (
+            "Moneyline Yesterday "
+            + _record_text(moneyline, "yesterday_record")
+            + " | Moneyline YTD "
+            + _record_text(moneyline, "ytd_record")
+        ),
+        (
+            "Totals Yesterday "
+            + _record_text(totals, "yesterday_record")
+            + " | Totals YTD "
+            + _record_text(totals, "ytd_record")
+        ),
+    ]
     return {
-        "content": "🏀 NBA picks",
-        "embeds": [records_embed],
+        "content": "\n".join(content_lines),
     }
 
 
