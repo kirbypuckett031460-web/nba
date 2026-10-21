@@ -430,9 +430,36 @@ def _render_table_image(
     img.save(output_path, format="PNG")
 
 
-def build_discord_payload() -> dict[str, Any]:
+def _record_text(perf: dict[str, Any], key: str) -> str:
+    record = str(perf.get(key, "0-0"))
+    pct_key = "yesterday_pct" if key == "yesterday_record" else "ytd_pct"
+    pct_val = perf.get(pct_key, 0.0)
+    try:
+        pct = float(pct_val)
+        if pct <= 1.0:
+            pct *= 100.0
+    except Exception:
+        pct = 0.0
+    return f"{record} ({pct:.1f}%)"
+
+
+def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
+    perf = predictions_payload.get("performance", {}) if isinstance(predictions_payload, dict) else {}
+    moneyline = perf.get("moneyline", {}) if isinstance(perf, dict) else {}
+    totals = perf.get("totals", {}) if isinstance(perf, dict) else {}
+    records_embed = {
+        "title": "Records",
+        "color": 3447003,
+        "fields": [
+            {"name": "Moneyline Yesterday", "value": _record_text(moneyline, "yesterday_record"), "inline": True},
+            {"name": "Moneyline YTD", "value": _record_text(moneyline, "ytd_record"), "inline": True},
+            {"name": "Totals Yesterday", "value": _record_text(totals, "yesterday_record"), "inline": True},
+            {"name": "Totals YTD", "value": _record_text(totals, "ytd_record"), "inline": True},
+        ],
+    }
     return {
         "content": "🏀 NBA picks",
+        "embeds": [records_embed],
     }
 
 
@@ -450,7 +477,7 @@ def main() -> None:
         raise FileNotFoundError(f"Predictions file not found: {predictions_path}")
 
     payload = json.loads(predictions_path.read_text(encoding="utf-8"))
-    discord_payload = build_discord_payload()
+    discord_payload = build_discord_payload(payload)
     frame = pd.DataFrame(payload.get("games", []) or [])
     ml_rows = _moneyline_table_data(frame)
     ou_rows = _totals_table_data(frame)
@@ -479,6 +506,7 @@ def main() -> None:
 
         payload_json = dict(discord_payload)
         payload_json["embeds"] = [
+            *payload_json.get("embeds", []),
             {
                 "title": "Moneyline Picks",
                 "color": 3447003,

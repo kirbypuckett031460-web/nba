@@ -9,7 +9,12 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from .stats import fetch_schedule_results_for_season, normalize_team_name, team_lookup
+from .stats import (
+    fetch_schedule_results_for_dates,
+    fetch_schedule_results_for_season,
+    normalize_team_name,
+    team_lookup,
+)
 
 
 def _zero_stats() -> dict[str, Any]:
@@ -127,15 +132,32 @@ def update_pick_history(path: Path, predictions_df: pd.DataFrame, generated_at: 
     return merged_df
 
 
-def _results_for_season(season: str, canon_lookup: dict[str, str]) -> pd.DataFrame:
+def _results_for_season(season: str, canon_lookup: dict[str, str], target_dates: list[date]) -> pd.DataFrame:
+    frames: list[pd.DataFrame] = []
     try:
-        results = fetch_schedule_results_for_season(season)
+        bref_results = fetch_schedule_results_for_season(season)
     except Exception:
-        return pd.DataFrame()
-    if results.empty:
-        return results
+        bref_results = pd.DataFrame()
+    if not bref_results.empty:
+        frames.append(bref_results.copy())
 
-    out = results.copy()
+    # Fill any missing dates (or full fallback) using ESPN's scoreboard API.
+    present_dates: set[date] = set()
+    if frames:
+        present_dates = set(pd.to_datetime(frames[0]["game_date"], errors="coerce").dt.date.dropna().tolist())
+    missing_dates = [d for d in sorted(set(target_dates)) if d not in present_dates]
+    if missing_dates:
+        try:
+            espn_results = fetch_schedule_results_for_dates(missing_dates)
+        except Exception:
+            espn_results = pd.DataFrame()
+        if not espn_results.empty:
+            frames.append(espn_results.copy())
+
+    if not frames:
+        return pd.DataFrame()
+
+    out = pd.concat(frames, ignore_index=True)
     out["game_date_et"] = pd.to_datetime(out["game_date"], errors="coerce").dt.date
     out["home_canon"] = out["home_team"].map(lambda x: _canonical_team(str(x), canon_lookup))
     out["away_canon"] = out["away_team"].map(lambda x: _canonical_team(str(x), canon_lookup))
@@ -170,10 +192,15 @@ def compute_performance(
     hist["commence_time"] = pd.to_datetime(hist["commence_time"], utc=True, errors="coerce")
     hist = hist.dropna(subset=["commence_time"]).copy()
     hist["game_date_et"] = hist["commence_time"].dt.tz_convert(timezone).dt.date
+    hist = hist[(hist["game_date_et"] >= season_start) & (hist["game_date_et"] <= yesterday)].copy()
+    if hist.empty:
+        return empty_performance_payload()
+
+    target_dates = sorted({d for d in hist["game_date_et"].dropna().tolist()})
     hist["home_canon"] = hist["home_team"].map(lambda x: _canonical_team(str(x), canon_lookup))
     hist["away_canon"] = hist["away_team"].map(lambda x: _canonical_team(str(x), canon_lookup))
 
-    results = _results_for_season(season=season, canon_lookup=canon_lookup)
+    results = _results_for_season(season=season, canon_lookup=canon_lookup, target_dates=target_dates)
     if results.empty:
         return empty_performance_payload()
 
@@ -182,10 +209,6 @@ def compute_performance(
         on=["game_date_et", "home_canon", "away_canon"],
         how="inner",
     )
-    if merged.empty:
-        return empty_performance_payload()
-
-    merged = merged[(merged["game_date_et"] >= season_start) & (merged["game_date_et"] <= yesterday)].copy()
     if merged.empty:
         return empty_performance_payload()
 

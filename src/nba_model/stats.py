@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 import re
 import time
@@ -12,6 +13,7 @@ import requests
 from nba_api.stats.static import teams
 
 FALLBACK_GAME_LOGS_PATH = Path(__file__).resolve().parents[2] / "data" / "historical_game_logs.csv"
+ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 
 
 def normalize_team_name(name: str) -> str:
@@ -135,6 +137,88 @@ def _bref_games_for_season(season: str) -> pd.DataFrame:
 def fetch_schedule_results_for_season(season: str) -> pd.DataFrame:
     """Return completed games for the given season from Basketball-Reference."""
     return _bref_games_for_season(season)
+
+
+def _espn_full_team_name(team_payload: dict[str, Any]) -> str:
+    location = str(team_payload.get("location", "")).strip()
+    nickname = str(team_payload.get("name", "")).strip()
+    combined = f"{location} {nickname}".strip()
+    if combined:
+        return combined
+    # Fallback to display names when location/name are unavailable.
+    for key in ("displayName", "shortDisplayName"):
+        text = str(team_payload.get(key, "")).strip()
+        if text:
+            return text
+    return ""
+
+
+def _espn_games_for_date(game_date: date) -> pd.DataFrame:
+    try:
+        response = requests.get(
+            ESPN_SCOREBOARD_URL,
+            params={"dates": game_date.strftime("%Y%m%d"), "limit": 200},
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception:
+        return pd.DataFrame()
+
+    events = payload.get("events", []) if isinstance(payload, dict) else []
+    rows: list[dict[str, Any]] = []
+    for event in events:
+        competitions = event.get("competitions", [])
+        if not competitions:
+            continue
+        comp = competitions[0]
+        status = comp.get("status", {}).get("type", {})
+        if not status.get("completed", False):
+            continue
+        competitors = comp.get("competitors", [])
+        home = next((c for c in competitors if str(c.get("homeAway", "")).lower() == "home"), None)
+        away = next((c for c in competitors if str(c.get("homeAway", "")).lower() == "away"), None)
+        if not home or not away:
+            continue
+        try:
+            home_points = int(float(home.get("score")))
+            away_points = int(float(away.get("score")))
+        except Exception:
+            continue
+
+        home_team = _espn_full_team_name(home.get("team", {}))
+        away_team = _espn_full_team_name(away.get("team", {}))
+        if not home_team or not away_team:
+            continue
+
+        rows.append(
+            {
+                "game_date": pd.Timestamp(game_date),
+                "home_team": home_team,
+                "away_team": away_team,
+                "home_points": home_points,
+                "away_points": away_points,
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows)
+
+
+def fetch_schedule_results_for_dates(game_dates: list[date]) -> pd.DataFrame:
+    rows: list[pd.DataFrame] = []
+    for game_date in sorted(set(game_dates)):
+        day_df = _espn_games_for_date(game_date)
+        if not day_df.empty:
+            rows.append(day_df)
+    if not rows:
+        return pd.DataFrame()
+    out = pd.concat(rows, ignore_index=True)
+    out["game_date"] = pd.to_datetime(out["game_date"], errors="coerce")
+    out = out.dropna(subset=["game_date"])
+    out = out.drop_duplicates(subset=["game_date", "home_team", "away_team"]).sort_values("game_date")
+    return out.reset_index(drop=True)
 
 
 def _load_fallback_game_logs(seasons: list[str]) -> pd.DataFrame:
