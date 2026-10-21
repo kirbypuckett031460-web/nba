@@ -346,20 +346,97 @@ def _pick_bg(value: Any, row: dict[str, Any] | None = None) -> tuple[int, int, i
     return (30, 95, 180)
 
 
-def _render_table_image(
-    title: str,
+def _truncate_for_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont | ImageFont.ImageFont, max_px: int) -> str:
+    value = str(text)
+    if draw.textlength(value, font=font) <= max_px:
+        return value
+    ellipsis = "…"
+    while value and draw.textlength(value + ellipsis, font=font) > max_px:
+        value = value[:-1]
+    return (value + ellipsis) if value else ellipsis
+
+
+def _draw_table(
+    draw: ImageDraw.ImageDraw,
+    left_x: int,
+    start_y: int,
     headers: list[str],
     rows: list[dict[str, Any]],
+    widths: dict[str, int],
+    row_h: int,
+    font_cell: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    font_header: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+) -> int:
+    # Header row
+    y = start_y
+    cx = left_x
+    for h in headers:
+        w = widths[h]
+        draw.rectangle([cx, y, cx + w, y + row_h], fill=(45, 55, 79), outline=(61, 74, 103))
+        draw.text((cx + 8, y + 9), h, fill=(216, 225, 247), font=font_header)
+        cx += w
+    y += row_h
+
+    for idx, row in enumerate(rows):
+        base_bg = (23, 32, 50) if idx % 2 == 0 else (20, 29, 46)
+        cx = left_x
+        for h in headers:
+            w = widths[h]
+            bg = base_bg
+            if h == "Pick":
+                bg = _pick_bg(row.get(h), row=row)
+            elif h == "Edge":
+                bg = _edge_bg(row.get("__edge_val"))
+            elif h == "Confidence":
+                bg = _conf_bg(row.get("__conf_val"))
+            draw.rectangle([cx, y, cx + w, y + row_h], fill=bg, outline=(47, 58, 83))
+            text = _truncate_for_width(draw, str(row.get(h, "—")), font_cell, max_px=w - 14)
+            draw.text((cx + 7, y + 9), text, fill=(236, 241, 252), font=font_cell)
+            cx += w
+        y += row_h
+    return y
+
+
+def _slate_date_text(frame: pd.DataFrame, payload: dict[str, Any]) -> str:
+    filter_date = payload.get("filter_date")
+    if filter_date:
+        parsed = pd.to_datetime(filter_date, errors="coerce")
+        if pd.notna(parsed):
+            return parsed.strftime("%a, %b %d, %Y")
+    if frame.empty or "commence_time" not in frame.columns:
+        return "N/A"
+    ts = pd.to_datetime(frame["commence_time"], utc=True, errors="coerce").dropna()
+    if ts.empty:
+        return "N/A"
+    return ts.min().tz_convert("America/New_York").strftime("%a, %b %d, %Y")
+
+
+def _generated_at_text(payload: dict[str, Any]) -> str:
+    raw = payload.get("generated_at")
+    if not raw:
+        return "N/A"
+    ts = pd.to_datetime(raw, utc=True, errors="coerce")
+    if pd.isna(ts):
+        return "N/A"
+    return ts.tz_convert("America/New_York").strftime("%Y-%m-%d %I:%M %p ET")
+
+
+def _render_combined_card_image(
+    payload: dict[str, Any],
+    ml_rows: list[dict[str, Any]],
+    ou_rows: list[dict[str, Any]],
     output_path: Path,
 ) -> None:
-    if not rows:
-        rows = [{h: "—" for h in headers} | {"__edge_val": None, "__conf_val": None}]
+    if not ml_rows:
+        ml_rows = [{"Game Time (ET)": "—", "Away": "—", "Home": "—", "Mkt": "—", "Fair": "—", "Pick": "—", "Edge": "—", "Confidence": "—", "__edge_val": None, "__conf_val": None, "__pick_type": "moneyline"}]
+    if not ou_rows:
+        ou_rows = [{"Game Time (ET)": "—", "Away": "—", "Home": "—", "Line": "—", "Proj": "—", "Pick": "—", "Edge": "—", "Confidence": "—", "__edge_val": None, "__conf_val": None, "__pick_type": "total"}]
 
-    max_rows = 22
-    omitted = 0
-    if len(rows) > max_rows:
-        omitted = len(rows) - max_rows
-        rows = rows[:max_rows]
+    max_rows_per_table = 14
+    ml_omitted = max(len(ml_rows) - max_rows_per_table, 0)
+    ou_omitted = max(len(ou_rows) - max_rows_per_table, 0)
+    ml_rows = ml_rows[:max_rows_per_table]
+    ou_rows = ou_rows[:max_rows_per_table]
 
     widths = {
         "Game Time (ET)": 140,
@@ -373,13 +450,22 @@ def _render_table_image(
         "Edge": 92,
         "Confidence": 110,
     }
+    headers_ml = ["Game Time (ET)", "Away", "Home", "Mkt", "Fair", "Pick", "Edge", "Confidence"]
+    headers_ou = ["Game Time (ET)", "Away", "Home", "Line", "Proj", "Pick", "Edge", "Confidence"]
+
     row_h = 34
-    title_h = 42
-    top_pad = 14
-    left_pad = 16
-    table_w = sum(widths[h] for h in headers)
+    section_title_h = 26
+    table_gap = 16
+    top_pad = 18
+    left_pad = 18
+    bottom_pad = 18
+    table_w = sum(widths[h] for h in headers_ml)
     total_w = left_pad * 2 + table_w
-    total_h = top_pad + title_h + row_h * (len(rows) + 1) + (34 if omitted else 14)
+
+    header_block_h = 82
+    ml_block_h = section_title_h + row_h * (1 + len(ml_rows)) + (18 if ml_omitted else 0)
+    ou_block_h = section_title_h + row_h * (1 + len(ou_rows)) + (18 if ou_omitted else 0)
+    total_h = top_pad + header_block_h + ml_block_h + table_gap + ou_block_h + bottom_pad
 
     img = Image.new("RGB", (total_w, total_h), (15, 21, 33))
     draw = ImageDraw.Draw(img)
@@ -387,44 +473,58 @@ def _render_table_image(
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         font_bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
         font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
+        font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)
     except Exception:
         font = ImageFont.load_default()
         font_bold = ImageFont.load_default()
         font_small = ImageFont.load_default()
+        font_title = ImageFont.load_default()
 
-    draw.text((left_pad, top_pad), title, fill=(232, 238, 252), font=font_bold)
-    y = top_pad + title_h
-    x = left_pad
+    perf = payload.get("performance", {}) if isinstance(payload, dict) else {}
+    moneyline_perf = perf.get("moneyline", {}) if isinstance(perf, dict) else {}
+    totals_perf = perf.get("totals", {}) if isinstance(perf, dict) else {}
+    slate_date = _slate_date_text(pd.DataFrame(payload.get("games", []) or []), payload)
+    updated = _generated_at_text(payload)
 
-    # Header row
-    cx = x
-    for h in headers:
-        w = widths[h]
-        draw.rectangle([cx, y, cx + w, y + row_h], fill=(30, 36, 49), outline=(48, 58, 78))
-        draw.text((cx + 8, y + 8), h, fill=(205, 216, 238), font=font_small)
-        cx += w
-    y += row_h
+    title_text = "NBA Picks"
+    title_w = int(draw.textlength(title_text, font=font_title))
+    draw.text(((total_w - title_w) // 2, top_pad), title_text, fill=(241, 245, 255), font=font_title)
 
-    for idx, row in enumerate(rows):
-        base_bg = (18, 24, 37) if idx % 2 == 0 else (21, 28, 43)
-        cx = x
-        for h in headers:
-            w = widths[h]
-            bg = base_bg
-            if h == "Pick":
-                bg = _pick_bg(row.get(h), row=row)
-            elif h == "Edge":
-                bg = _edge_bg(row.get("__edge_val"))
-            elif h == "Confidence":
-                bg = _conf_bg(row.get("__conf_val"))
-            draw.rectangle([cx, y, cx + w, y + row_h], fill=bg, outline=(48, 58, 78))
-            text = str(row.get(h, "—"))
-            draw.text((cx + 8, y + 8), text, fill=(232, 238, 252), font=font_small)
-            cx += w
-        y += row_h
+    stats_line_1 = (
+        "ML Yesterday "
+        + _record_text(moneyline_perf, "yesterday_record")
+        + "   |   ML YTD "
+        + _record_text(moneyline_perf, "ytd_record")
+    )
+    stats_line_2 = (
+        "Totals Yesterday "
+        + _record_text(totals_perf, "yesterday_record")
+        + "   |   Totals YTD "
+        + _record_text(totals_perf, "ytd_record")
+    )
+    meta_line = f"Slate Date: {slate_date}   |   Last updated: {updated}"
 
-    if omitted:
-        draw.text((left_pad, y + 8), f"...and {omitted} more game(s).", fill=(173, 186, 214), font=font_small)
+    for idx, line in enumerate([stats_line_1, stats_line_2, meta_line]):
+        font_for_line = font_bold if idx < 2 else font_small
+        color = (213, 222, 243) if idx < 2 else (156, 169, 197)
+        line_w = int(draw.textlength(line, font=font_for_line))
+        y_line = top_pad + 38 + idx * 18
+        draw.text(((total_w - line_w) // 2, y_line), line, fill=color, font=font_for_line)
+
+    y = top_pad + header_block_h
+    draw.text((left_pad, y), "Moneyline Picks", fill=(236, 241, 252), font=font_bold)
+    y += section_title_h
+    y = _draw_table(draw, left_pad, y, headers_ml, ml_rows, widths, row_h, font_small, font_small)
+    if ml_omitted:
+        draw.text((left_pad, y + 4), f"...and {ml_omitted} more game(s).", fill=(173, 186, 214), font=font_small)
+        y += 18
+
+    y += table_gap
+    draw.text((left_pad, y), "Over/Under Picks", fill=(236, 241, 252), font=font_bold)
+    y += section_title_h
+    y = _draw_table(draw, left_pad, y, headers_ou, ou_rows, widths, row_h, font_small, font_small)
+    if ou_omitted:
+        draw.text((left_pad, y + 4), f"...and {ou_omitted} more game(s).", fill=(173, 186, 214), font=font_small)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(output_path, format="PNG")
@@ -444,26 +544,8 @@ def _record_text(perf: dict[str, Any], key: str) -> str:
 
 
 def build_discord_payload(predictions_payload: dict[str, Any]) -> dict[str, Any]:
-    perf = predictions_payload.get("performance", {}) if isinstance(predictions_payload, dict) else {}
-    moneyline = perf.get("moneyline", {}) if isinstance(perf, dict) else {}
-    totals = perf.get("totals", {}) if isinstance(perf, dict) else {}
-    content_lines = [
-        "🏀 NBA picks",
-        (
-            "Moneyline Yesterday "
-            + _record_text(moneyline, "yesterday_record")
-            + " | Moneyline YTD "
-            + _record_text(moneyline, "ytd_record")
-        ),
-        (
-            "Totals Yesterday "
-            + _record_text(totals, "yesterday_record")
-            + " | Totals YTD "
-            + _record_text(totals, "ytd_record")
-        ),
-    ]
     return {
-        "content": "\n".join(content_lines),
+        "content": "🏀 NBA picks",
     }
 
 
@@ -493,45 +575,26 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="discord-picks-") as tmp_dir:
         tmp_path = Path(tmp_dir)
-        ml_img = tmp_path / "moneyline-picks.png"
-        ou_img = tmp_path / "totals-picks.png"
-        _render_table_image(
-            "Moneyline Picks",
-            ["Game Time (ET)", "Away", "Home", "Mkt", "Fair", "Pick", "Edge", "Confidence"],
-            ml_rows,
-            ml_img,
-        )
-        _render_table_image(
-            "Over/Under Picks",
-            ["Game Time (ET)", "Away", "Home", "Line", "Proj", "Pick", "Edge", "Confidence"],
-            ou_rows,
-            ou_img,
-        )
+        card_img = tmp_path / "nba-picks-card.png"
+        _render_combined_card_image(payload, ml_rows, ou_rows, card_img)
 
         payload_json = {
             "content": str(discord_payload.get("content", "🏀 NBA picks")),
             "embeds": [
-                *list(discord_payload.get("embeds", [])),
-            {
-                "title": "Moneyline Picks",
-                "color": 3447003,
-                "image": {"url": "attachment://moneyline-picks.png"},
-            },
-            {
-                "title": "Over/Under Picks",
-                "color": 3447003,
-                "image": {"url": "attachment://totals-picks.png"},
-            },
-        ],
+                {
+                    "title": "NBA Picks",
+                    "color": 3447003,
+                    "image": {"url": "attachment://nba-picks-card.png"},
+                }
+            ],
         }
 
-        with ml_img.open("rb") as ml_file, ou_img.open("rb") as ou_file:
+        with card_img.open("rb") as card_file:
             upload = requests.post(
                 webhook,
                 data={"payload_json": json.dumps(payload_json)},
                 files={
-                    "file0": ("moneyline-picks.png", ml_file, "image/png"),
-                    "file1": ("totals-picks.png", ou_file, "image/png"),
+                    "file0": ("nba-picks-card.png", card_file, "image/png"),
                 },
                 timeout=30,
             )
