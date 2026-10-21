@@ -512,6 +512,7 @@ ml["pick_display"] = np.where(
 ml.loc[is_pass, "pick_display"] = "Pass"
 ml_table = ml[
     [
+        "commence_time",
         "game_time_et",
         "away_display",
         "home_display",
@@ -525,6 +526,7 @@ ml_table = ml[
     ]
 ].rename(
     columns={
+        "commence_time": "_sort_time",
         "game_time_et": "Game Time (ET)",
         "away_display": "Away",
         "home_display": "Home",
@@ -535,8 +537,8 @@ ml_table = ml[
         "confidence": "Confidence",
     }
 )
-ml_table = ml_table.sort_values("best_moneyline_edge_pct", ascending=False, na_position="last")
-ml_display = ml_table.drop(columns=["best_moneyline_edge_pct", "confidence_prob"]).copy()
+ml_table = ml_table.sort_values("_sort_time", ascending=True, na_position="last")
+ml_display = ml_table.drop(columns=["_sort_time", "best_moneyline_edge_pct", "confidence_prob"]).copy()
 
 def _edge_color(v: float | int | None) -> str:
     if v is None or (isinstance(v, float) and np.isnan(v)):
@@ -602,6 +604,7 @@ ou["line_display"] = ou["total_line"].map(_to_half_line_text)
 ou["projection_display"] = ou["model_projected_total"].map(_to_whole_number_text)
 ou_table = ou[
     [
+        "commence_time",
         "game_time_et",
         "away_display",
         "home_display",
@@ -615,6 +618,7 @@ ou_table = ou[
     ]
 ].rename(
     columns={
+        "commence_time": "_sort_time",
         "game_time_et": "Game Time (ET)",
         "away_display": "Away",
         "home_display": "Home",
@@ -625,8 +629,8 @@ ou_table = ou[
         "confidence": "Confidence",
     }
 )
-ou_table = ou_table.sort_values("edge_raw", ascending=False, na_position="last")
-ou_display = ou_table.drop(columns=["edge_raw", "confidence_prob"]).copy()
+ou_table = ou_table.sort_values("_sort_time", ascending=True, na_position="last")
+ou_display = ou_table.drop(columns=["_sort_time", "edge_raw", "confidence_prob"]).copy()
 
 ou_styler = (
     ou_display.style.hide(axis="index")
