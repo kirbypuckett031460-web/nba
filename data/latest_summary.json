@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-10-21T13:19:49.479581+00:00",
+  "generated_at": "2026-10-21T13:31:28.545435+00:00",
   "games_count": 11,
   "metrics": {
-    "moneyline_auc": 0.6276915093209852,
-    "moneyline_log_loss": 0.7059173617806729,
-    "total_mae": 16.332518604696748,
-    "sample_games": 5013.0
+    "moneyline_auc": 0.7048356859797126,
+    "moneyline_log_loss": 0.6352581549971871,
+    "total_mae": 15.756331126502282,
+    "sample_games": 6605.0
   },
   "filter_date": "2026-10-21",
   "filter_timezone": "America/New_York",
