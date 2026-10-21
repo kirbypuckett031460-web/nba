@@ -504,9 +504,10 @@ def main() -> None:
             ou_img,
         )
 
-        payload_json = dict(discord_payload)
-        payload_json["embeds"] = [
-            *payload_json.get("embeds", []),
+        payload_json = {
+            "content": str(discord_payload.get("content", "🏀 NBA picks")),
+            "embeds": [
+                *list(discord_payload.get("embeds", [])),
             {
                 "title": "Moneyline Picks",
                 "color": 3447003,
@@ -517,7 +518,8 @@ def main() -> None:
                 "color": 3447003,
                 "image": {"url": "attachment://totals-picks.png"},
             },
-        ]
+        ],
+        }
 
         with ml_img.open("rb") as ml_file, ou_img.open("rb") as ou_file:
             upload = requests.post(
