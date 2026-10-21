@@ -581,7 +581,7 @@ ml_styler = (
 )
 
 with tab_ml:
-    st.dataframe(ml_styler, use_container_width=True)
+    st.dataframe(ml_styler, use_container_width=True, hide_index=True)
 
 ou = df.copy()
 ou["away_display"] = ou["away_team"].map(lambda x: _full_name(x, league_hint))
@@ -640,6 +640,6 @@ ou_styler = (
 )
 
 with tab_ou:
-    st.dataframe(ou_styler, use_container_width=True)
+    st.dataframe(ou_styler, use_container_width=True, hide_index=True)
 
 st.caption(_format_generated_at_et(payload.get("generated_at")))
