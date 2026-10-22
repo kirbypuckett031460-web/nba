@@ -88,17 +88,6 @@
     "generated_at": "2026-10-21T13:40:23.326474+00:00"
   },
   {
-    "prediction_key": "fd33c09c84ab4c2fe6955d59f8dc5dd2",
-    "game_id": "fd33c09c84ab4c2fe6955d59f8dc5dd2",
-    "commence_time": "2026-10-22T00:10:00Z",
-    "home_team": "New Orleans Pelicans",
-    "away_team": "Indiana Pacers",
-    "moneyline_pick": "Indiana Pacers ML",
-    "total_pick": "Under",
-    "total_line": 239.5,
-    "generated_at": "2026-10-21T13:40:23.326474+00:00"
-  },
-  {
     "prediction_key": "e6769c813dd625b622df94c14a562ce2",
     "game_id": "e6769c813dd625b622df94c14a562ce2",
     "commence_time": "2026-10-22T00:10:00Z",
@@ -107,6 +96,17 @@
     "moneyline_pick": "Utah Jazz ML",
     "total_pick": "Over",
     "total_line": 242.5,
+    "generated_at": "2026-10-21T13:40:23.326474+00:00"
+  },
+  {
+    "prediction_key": "fd33c09c84ab4c2fe6955d59f8dc5dd2",
+    "game_id": "fd33c09c84ab4c2fe6955d59f8dc5dd2",
+    "commence_time": "2026-10-22T00:10:00Z",
+    "home_team": "New Orleans Pelicans",
+    "away_team": "Indiana Pacers",
+    "moneyline_pick": "Indiana Pacers ML",
+    "total_pick": "Under",
+    "total_line": 239.5,
     "generated_at": "2026-10-21T13:40:23.326474+00:00"
   },
   {
@@ -161,8 +161,8 @@
     "away_team": "Cleveland Cavaliers",
     "moneyline_pick": "Cleveland Cavaliers ML",
     "total_pick": "Under",
-    "total_line": 236.5,
-    "generated_at": "2026-10-20T12:50:27.459045+00:00"
+    "total_line": 235.5,
+    "generated_at": "2026-10-22T12:54:06.785917+00:00"
   },
   {
     "prediction_key": "223b2883b9b05a67329ef246384b85f1",
@@ -170,10 +170,10 @@
     "commence_time": "2026-10-23T01:40:00Z",
     "home_team": "Oklahoma City Thunder",
     "away_team": "Denver Nuggets",
-    "moneyline_pick": "Oklahoma City Thunder ML",
+    "moneyline_pick": "Denver Nuggets ML",
     "total_pick": "Under",
-    "total_line": 236.5,
-    "generated_at": "2026-10-20T12:50:27.459045+00:00"
+    "total_line": 235.5,
+    "generated_at": "2026-10-22T12:54:06.785917+00:00"
   },
   {
     "prediction_key": "0d34c898f6cbb990077ae9f0a2773513",
@@ -209,28 +209,6 @@
     "generated_at": "2026-10-20T12:50:27.459045+00:00"
   },
   {
-    "prediction_key": "036a93ca33d6261c21d4bfa6e0d02568",
-    "game_id": "036a93ca33d6261c21d4bfa6e0d02568",
-    "commence_time": "2026-10-30T23:40:00Z",
-    "home_team": "Boston Celtics",
-    "away_team": "Chicago Bulls",
-    "moneyline_pick": "Boston Celtics ML",
-    "total_pick": "Over",
-    "total_line": NaN,
-    "generated_at": "2026-10-20T12:50:27.459045+00:00"
-  },
-  {
-    "prediction_key": "64df299b882ea19ad5f8cb0ed5516a6f",
-    "game_id": "64df299b882ea19ad5f8cb0ed5516a6f",
-    "commence_time": "2026-10-30T23:40:00Z",
-    "home_team": "Brooklyn Nets",
-    "away_team": "Detroit Pistons",
-    "moneyline_pick": "Detroit Pistons ML",
-    "total_pick": "Over",
-    "total_line": NaN,
-    "generated_at": "2026-10-20T12:50:27.459045+00:00"
-  },
-  {
     "prediction_key": "96a166bbd49782dbd9a61c2fb9069787",
     "game_id": "96a166bbd49782dbd9a61c2fb9069787",
     "commence_time": "2026-10-30T23:40:00Z",
@@ -248,6 +226,28 @@
     "home_team": "Toronto Raptors",
     "away_team": "Orlando Magic",
     "moneyline_pick": "Toronto Raptors ML",
+    "total_pick": "Over",
+    "total_line": NaN,
+    "generated_at": "2026-10-20T12:50:27.459045+00:00"
+  },
+  {
+    "prediction_key": "036a93ca33d6261c21d4bfa6e0d02568",
+    "game_id": "036a93ca33d6261c21d4bfa6e0d02568",
+    "commence_time": "2026-10-30T23:40:00Z",
+    "home_team": "Boston Celtics",
+    "away_team": "Chicago Bulls",
+    "moneyline_pick": "Boston Celtics ML",
+    "total_pick": "Over",
+    "total_line": NaN,
+    "generated_at": "2026-10-20T12:50:27.459045+00:00"
+  },
+  {
+    "prediction_key": "64df299b882ea19ad5f8cb0ed5516a6f",
+    "game_id": "64df299b882ea19ad5f8cb0ed5516a6f",
+    "commence_time": "2026-10-30T23:40:00Z",
+    "home_team": "Brooklyn Nets",
+    "away_team": "Detroit Pistons",
+    "moneyline_pick": "Detroit Pistons ML",
     "total_pick": "Over",
     "total_line": NaN,
     "generated_at": "2026-10-20T12:50:27.459045+00:00"
