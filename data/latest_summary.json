@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-10-24T13:02:50.965926+00:00",
-  "games_count": 13,
+  "generated_at": "2026-10-24T13:06:14.916819+00:00",
+  "games_count": 8,
   "metrics": {
     "moneyline_auc": 0.7048356859797126,
     "moneyline_log_loss": 0.6352581549971871,
     "total_mae": 15.756331126502282,
     "sample_games": 6605.0
   },
-  "filter_date": null,
-  "filter_timezone": null,
+  "filter_date": "2026-10-24",
+  "filter_timezone": "America/New_York",
   "performance": {
     "moneyline": {
       "yesterday_record": "4-7",
