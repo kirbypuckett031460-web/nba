@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 import os
 from pathlib import Path
 import sys
+from zoneinfo import ZoneInfo
 
 # Ensure repo root is importable when this script is executed directly from CI.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -43,10 +45,20 @@ def _candidate_api_keys() -> list[str]:
     return candidates
 
 
+def _resolve_target_date(raw_value: str | None, timezone: str) -> str | None:
+    token = (raw_value or "").strip()
+    if token.upper() in {"ALL", "__ALL__", "ALL_UPCOMING"}:
+        return None
+    if token:
+        return token
+    # Default blank workflow input to today's slate in the selected timezone.
+    return datetime.now(ZoneInfo(timezone)).date().isoformat()
+
+
 def main() -> None:
     base_settings = AppSettings()
-    target_date = (os.getenv("TARGET_DATE", "") or "").strip() or None
     target_timezone = (os.getenv("TARGET_TIMEZONE", "") or "America/New_York").strip()
+    target_date = _resolve_target_date(os.getenv("TARGET_DATE", ""), target_timezone)
 
     key_candidates = _candidate_api_keys()
     if not key_candidates and base_settings.odds_api_key:

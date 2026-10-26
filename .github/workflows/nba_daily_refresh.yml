@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       target_date:
-        description: "Optional ET date to publish (YYYY-MM-DD). Leave blank for all upcoming games."
+        description: "Optional ET date to publish (YYYY-MM-DD). Leave blank to auto-use today's ET slate date."
         required: false
         type: string
       target_timezone:
