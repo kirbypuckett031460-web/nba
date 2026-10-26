@@ -132,7 +132,7 @@ with right:
         if missing:
             st.error(f"Missing required settings for dispatch: {', '.join(missing)}")
         else:
-            dispatch_target_date = selected_date.isoformat() if run_scope == "Selected date (ET)" else ""
+            dispatch_target_date = selected_date.isoformat() if run_scope == "Selected date (ET)" else "__ALL__"
             dispatch_inputs = {
                 "target_date": dispatch_target_date,
                 "target_timezone": "America/New_York",
@@ -146,7 +146,11 @@ with right:
                 inputs=dispatch_inputs,
             )
             if ok:
-                date_msg = f" (target date: {dispatch_target_date} ET)" if dispatch_target_date else " (all upcoming dates)"
+                date_msg = (
+                    f" (target date: {dispatch_target_date} ET)"
+                    if dispatch_target_date and dispatch_target_date != "__ALL__"
+                    else " (all upcoming dates)"
+                )
                 st.success(f"{message}{date_msg}")
             else:
                 st.error(message)
