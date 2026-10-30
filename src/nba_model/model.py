@@ -315,6 +315,28 @@ def _matchup_feature_row(
     return {col: feature_row.get(col, np.nan) for col in feature_columns}
 
 
+def _calibrate_moneyline_prob(
+    raw_home_prob: float,
+    home_market_prob: float | None,
+    away_market_prob: float | None,
+) -> float:
+    # Clamp and shrink extremes so fair odds don't explode from overconfident
+    # classifier outputs early in season / low-signal spots.
+    base = float(np.clip(raw_home_prob, 0.01, 0.99))
+    shrunk = 0.5 + (base - 0.5) * 0.55
+
+    if home_market_prob is not None and away_market_prob is not None:
+        market_sum = float(home_market_prob + away_market_prob)
+        if market_sum > 0:
+            no_vig_home = float(home_market_prob / market_sum)
+            blended = 0.65 * shrunk + 0.35 * no_vig_home
+            return float(np.clip(blended, 0.08, 0.92))
+    if home_market_prob is not None:
+        blended = 0.8 * shrunk + 0.2 * float(home_market_prob)
+        return float(np.clip(blended, 0.08, 0.92))
+    return float(np.clip(shrunk, 0.08, 0.92))
+
+
 def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pct: float) -> pd.DataFrame:
     if odds_df.empty:
         return odds_df.copy()
@@ -331,7 +353,7 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         )
         features_df = pd.DataFrame([feature_row])
 
-        home_win_prob = float(bundle.classifier.predict_proba(features_df)[0, 1])
+        raw_home_win_prob = float(bundle.classifier.predict_proba(features_df)[0, 1])
         projected_total = float(bundle.total_regressor.predict(features_df)[0])
         over_line = game.get("total_line")
         over_prob = np.nan
@@ -342,11 +364,16 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
 
         home_market = american_to_implied_prob(game.get("home_moneyline"))
         away_market = american_to_implied_prob(game.get("away_moneyline"))
+        home_win_prob = _calibrate_moneyline_prob(
+            raw_home_prob=raw_home_win_prob,
+            home_market_prob=home_market,
+            away_market_prob=away_market,
+        )
+        away_win_prob = 1.0 - home_win_prob
         over_market = american_to_implied_prob(game.get("over_price"))
         under_market = american_to_implied_prob(game.get("under_price"))
 
         home_edge = (home_win_prob - home_market) * 100.0 if home_market is not None else np.nan
-        away_win_prob = 1.0 - home_win_prob
         away_edge = (away_win_prob - away_market) * 100.0 if away_market is not None else np.nan
         over_edge = (over_prob - over_market) * 100.0 if over_market is not None and pd.notna(over_prob) else np.nan
         under_edge = (under_prob - under_market) * 100.0 if under_market is not None and pd.notna(under_prob) else np.nan
