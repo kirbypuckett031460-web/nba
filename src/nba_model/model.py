@@ -323,18 +323,20 @@ def _calibrate_moneyline_prob(
     # Clamp and shrink extremes so fair odds don't explode from overconfident
     # classifier outputs early in season / low-signal spots.
     base = float(np.clip(raw_home_prob, 0.01, 0.99))
-    shrunk = 0.5 + (base - 0.5) * 0.55
+    shrunk = 0.5 + (base - 0.5) * 0.45
 
     if home_market_prob is not None and away_market_prob is not None:
         market_sum = float(home_market_prob + away_market_prob)
         if market_sum > 0:
             no_vig_home = float(home_market_prob / market_sum)
-            blended = 0.65 * shrunk + 0.35 * no_vig_home
-            return float(np.clip(blended, 0.08, 0.92))
+            # Anchor mostly to market to reduce underdog-heavy drift.
+            market_anchor = 0.7 * float(home_market_prob) + 0.3 * no_vig_home
+            blended = 0.25 * shrunk + 0.75 * market_anchor
+            return float(np.clip(blended, 0.12, 0.88))
     if home_market_prob is not None:
-        blended = 0.8 * shrunk + 0.2 * float(home_market_prob)
-        return float(np.clip(blended, 0.08, 0.92))
-    return float(np.clip(shrunk, 0.08, 0.92))
+        blended = 0.35 * shrunk + 0.65 * float(home_market_prob)
+        return float(np.clip(blended, 0.12, 0.88))
+    return float(np.clip(shrunk, 0.12, 0.88))
 
 
 def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pct: float) -> pd.DataFrame:
@@ -378,16 +380,37 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         over_edge = (over_prob - over_market) * 100.0 if over_market is not None and pd.notna(over_prob) else np.nan
         under_edge = (under_prob - under_market) * 100.0 if under_market is not None and pd.notna(under_prob) else np.nan
 
-        # Always produce a pick for every game: select the stronger side even if edge is small/negative.
-        best_moneyline_edge = np.nanmax([home_edge, away_edge]) if not (np.isnan(home_edge) and np.isnan(away_edge)) else np.nan
+        # Always produce a pick for every game.
         if np.isfinite(home_edge) and np.isfinite(away_edge):
-            moneyline_pick = f"{game['home_team']} ML" if home_edge >= away_edge else f"{game['away_team']} ML"
+            if home_edge <= 0 and away_edge <= 0 and home_market is not None and away_market is not None:
+                # If neither side shows edge, default to the market favorite.
+                moneyline_pick = f"{game['home_team']} ML" if home_market >= away_market else f"{game['away_team']} ML"
+            else:
+                moneyline_pick = f"{game['home_team']} ML" if home_edge >= away_edge else f"{game['away_team']} ML"
         elif np.isfinite(home_edge):
             moneyline_pick = f"{game['home_team']} ML"
         elif np.isfinite(away_edge):
             moneyline_pick = f"{game['away_team']} ML"
         else:
             moneyline_pick = f"{game['home_team']} ML" if home_win_prob >= away_win_prob else f"{game['away_team']} ML"
+
+        # Guardrail: don't force slight-edge underdogs; require a meaningful edge.
+        if home_market is not None and away_market is not None:
+            favorite_team = str(game["home_team"]) if home_market >= away_market else str(game["away_team"])
+            underdog_team = str(game["away_team"]) if favorite_team == str(game["home_team"]) else str(game["home_team"])
+            underdog_edge = away_edge if underdog_team == str(game["away_team"]) else home_edge
+            if (
+                moneyline_pick.startswith(underdog_team)
+                and np.isfinite(underdog_edge)
+                and float(underdog_edge) < 2.5
+            ):
+                moneyline_pick = f"{favorite_team} ML"
+
+        selected_moneyline_edge = np.nan
+        if moneyline_pick.startswith(str(game["home_team"])):
+            selected_moneyline_edge = home_edge
+        elif moneyline_pick.startswith(str(game["away_team"])):
+            selected_moneyline_edge = away_edge
 
         if np.isfinite(over_prob) and np.isfinite(under_prob):
             total_pick = "Over" if over_prob >= under_prob else "Under"
@@ -410,7 +433,7 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
                 "away_edge_pct": away_edge,
                 "over_edge_pct": over_edge,
                 "under_edge_pct": under_edge,
-                "best_moneyline_edge_pct": best_moneyline_edge,
+                "best_moneyline_edge_pct": selected_moneyline_edge,
                 "moneyline_pick": moneyline_pick,
                 "total_pick": total_pick,
             }
