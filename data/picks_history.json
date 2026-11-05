@@ -275,6 +275,17 @@
     "generated_at": "2026-10-23T12:42:15.398753+00:00"
   },
   {
+    "prediction_key": "946d3484688886fd8d3662aee224fb5f",
+    "game_id": "946d3484688886fd8d3662aee224fb5f",
+    "commence_time": "2026-10-24T02:10:00Z",
+    "home_team": "Los Angeles Lakers",
+    "away_team": "Los Angeles Clippers",
+    "moneyline_pick": "Los Angeles Clippers ML",
+    "total_pick": "Over",
+    "total_line": 228.5,
+    "generated_at": "2026-10-23T12:42:15.398753+00:00"
+  },
+  {
     "prediction_key": "93ae924d3fc473aadfa50b26a9a2115b",
     "game_id": "93ae924d3fc473aadfa50b26a9a2115b",
     "commence_time": "2026-10-24T02:10:00Z",
@@ -294,17 +305,6 @@
     "moneyline_pick": "Golden State Warriors ML",
     "total_pick": "Over",
     "total_line": 235.5,
-    "generated_at": "2026-10-23T12:42:15.398753+00:00"
-  },
-  {
-    "prediction_key": "946d3484688886fd8d3662aee224fb5f",
-    "game_id": "946d3484688886fd8d3662aee224fb5f",
-    "commence_time": "2026-10-24T02:10:00Z",
-    "home_team": "Los Angeles Lakers",
-    "away_team": "Los Angeles Clippers",
-    "moneyline_pick": "Los Angeles Clippers ML",
-    "total_pick": "Over",
-    "total_line": 228.5,
     "generated_at": "2026-10-23T12:42:15.398753+00:00"
   },
   {
@@ -341,17 +341,6 @@
     "generated_at": "2026-10-24T13:06:14.916819+00:00"
   },
   {
-    "prediction_key": "cce3cd5869541979d68f7bde648f7c20",
-    "game_id": "cce3cd5869541979d68f7bde648f7c20",
-    "commence_time": "2026-10-25T00:10:00Z",
-    "home_team": "Chicago Bulls",
-    "away_team": "Washington Wizards",
-    "moneyline_pick": "Washington Wizards ML",
-    "total_pick": "Over",
-    "total_line": 244.5,
-    "generated_at": "2026-10-24T13:06:14.916819+00:00"
-  },
-  {
     "prediction_key": "efb2248ad964f84921b3e700125e404b",
     "game_id": "efb2248ad964f84921b3e700125e404b",
     "commence_time": "2026-10-25T00:10:00Z",
@@ -360,6 +349,17 @@
     "moneyline_pick": "San Antonio Spurs ML",
     "total_pick": "Under",
     "total_line": 230.5,
+    "generated_at": "2026-10-24T13:06:14.916819+00:00"
+  },
+  {
+    "prediction_key": "cce3cd5869541979d68f7bde648f7c20",
+    "game_id": "cce3cd5869541979d68f7bde648f7c20",
+    "commence_time": "2026-10-25T00:10:00Z",
+    "home_team": "Chicago Bulls",
+    "away_team": "Washington Wizards",
+    "moneyline_pick": "Washington Wizards ML",
+    "total_pick": "Over",
+    "total_line": 244.5,
     "generated_at": "2026-10-24T13:06:14.916819+00:00"
   },
   {
@@ -473,17 +473,6 @@
     "generated_at": "2026-10-25T13:38:05.674092+00:00"
   },
   {
-    "prediction_key": "d639f79210d0b4b17c8f293c53c8c5aa",
-    "game_id": "d639f79210d0b4b17c8f293c53c8c5aa",
-    "commence_time": "2026-10-26T23:10:00Z",
-    "home_team": "Cleveland Cavaliers",
-    "away_team": "Minnesota Timberwolves",
-    "moneyline_pick": "Minnesota Timberwolves ML",
-    "total_pick": "Under",
-    "total_line": 233.5,
-    "generated_at": "2026-10-26T12:46:03.781556+00:00"
-  },
-  {
     "prediction_key": "3354649681943139cafc0049d42d9c8c",
     "game_id": "3354649681943139cafc0049d42d9c8c",
     "commence_time": "2026-10-26T23:10:00Z",
@@ -492,6 +481,17 @@
     "moneyline_pick": "Charlotte Hornets ML",
     "total_pick": "Under",
     "total_line": 228.5,
+    "generated_at": "2026-10-26T12:46:03.781556+00:00"
+  },
+  {
+    "prediction_key": "d639f79210d0b4b17c8f293c53c8c5aa",
+    "game_id": "d639f79210d0b4b17c8f293c53c8c5aa",
+    "commence_time": "2026-10-26T23:10:00Z",
+    "home_team": "Cleveland Cavaliers",
+    "away_team": "Minnesota Timberwolves",
+    "moneyline_pick": "Minnesota Timberwolves ML",
+    "total_pick": "Under",
+    "total_line": 233.5,
     "generated_at": "2026-10-26T12:46:03.781556+00:00"
   },
   {
@@ -671,6 +671,28 @@
     "generated_at": "2026-10-28T12:56:15.269654+00:00"
   },
   {
+    "prediction_key": "782d6ce7f65b592ad1c43d2f4e53cc82",
+    "game_id": "782d6ce7f65b592ad1c43d2f4e53cc82",
+    "commence_time": "2026-10-29T00:10:00Z",
+    "home_team": "New Orleans Pelicans",
+    "away_team": "Denver Nuggets",
+    "moneyline_pick": "Denver Nuggets ML",
+    "total_pick": "Over",
+    "total_line": 240.5,
+    "generated_at": "2026-10-28T12:56:15.269654+00:00"
+  },
+  {
+    "prediction_key": "7b9e02686c886a54c9a91dd3f3879326",
+    "game_id": "7b9e02686c886a54c9a91dd3f3879326",
+    "commence_time": "2026-10-29T00:10:00Z",
+    "home_team": "Chicago Bulls",
+    "away_team": "New York Knicks",
+    "moneyline_pick": "New York Knicks ML",
+    "total_pick": "Over",
+    "total_line": 232.5,
+    "generated_at": "2026-10-28T12:56:15.269654+00:00"
+  },
+  {
     "prediction_key": "83ca338f605b5664b7b1da34c19a0222",
     "game_id": "83ca338f605b5664b7b1da34c19a0222",
     "commence_time": "2026-10-29T00:10:00Z",
@@ -690,28 +712,6 @@
     "moneyline_pick": "Minnesota Timberwolves ML",
     "total_pick": "Under",
     "total_line": 228.5,
-    "generated_at": "2026-10-28T12:56:15.269654+00:00"
-  },
-  {
-    "prediction_key": "7b9e02686c886a54c9a91dd3f3879326",
-    "game_id": "7b9e02686c886a54c9a91dd3f3879326",
-    "commence_time": "2026-10-29T00:10:00Z",
-    "home_team": "Chicago Bulls",
-    "away_team": "New York Knicks",
-    "moneyline_pick": "New York Knicks ML",
-    "total_pick": "Over",
-    "total_line": 232.5,
-    "generated_at": "2026-10-28T12:56:15.269654+00:00"
-  },
-  {
-    "prediction_key": "782d6ce7f65b592ad1c43d2f4e53cc82",
-    "game_id": "782d6ce7f65b592ad1c43d2f4e53cc82",
-    "commence_time": "2026-10-29T00:10:00Z",
-    "home_team": "New Orleans Pelicans",
-    "away_team": "Denver Nuggets",
-    "moneyline_pick": "Denver Nuggets ML",
-    "total_pick": "Over",
-    "total_line": 240.5,
     "generated_at": "2026-10-28T12:56:15.269654+00:00"
   },
   {
@@ -1023,25 +1023,14 @@
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
-    "prediction_key": "0a808d8f7afab3c0e249ca284c470806",
-    "game_id": "0a808d8f7afab3c0e249ca284c470806",
+    "prediction_key": "fdf913d713fd5851d418c59872bdf265",
+    "game_id": "fdf913d713fd5851d418c59872bdf265",
     "commence_time": "2026-11-03T00:40:00Z",
-    "home_team": "Philadelphia 76ers",
-    "away_team": "Chicago Bulls",
-    "moneyline_pick": "Philadelphia 76ers ML",
-    "total_pick": "Under",
-    "total_line": 239.5,
-    "generated_at": "2026-11-02T13:33:22.127787+00:00"
-  },
-  {
-    "prediction_key": "4f6688e4d1818bd8bb3e65352c7a0406",
-    "game_id": "4f6688e4d1818bd8bb3e65352c7a0406",
-    "commence_time": "2026-11-03T00:40:00Z",
-    "home_team": "New York Knicks",
-    "away_team": "Brooklyn Nets",
-    "moneyline_pick": "New York Knicks ML",
+    "home_team": "Charlotte Hornets",
+    "away_team": "Detroit Pistons",
+    "moneyline_pick": "Charlotte Hornets ML",
     "total_pick": "Over",
-    "total_line": 221.5,
+    "total_line": 210.5,
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
@@ -1067,14 +1056,25 @@
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
-    "prediction_key": "fdf913d713fd5851d418c59872bdf265",
-    "game_id": "fdf913d713fd5851d418c59872bdf265",
+    "prediction_key": "0a808d8f7afab3c0e249ca284c470806",
+    "game_id": "0a808d8f7afab3c0e249ca284c470806",
     "commence_time": "2026-11-03T00:40:00Z",
-    "home_team": "Charlotte Hornets",
-    "away_team": "Detroit Pistons",
-    "moneyline_pick": "Charlotte Hornets ML",
+    "home_team": "Philadelphia 76ers",
+    "away_team": "Chicago Bulls",
+    "moneyline_pick": "Philadelphia 76ers ML",
+    "total_pick": "Under",
+    "total_line": 239.5,
+    "generated_at": "2026-11-02T13:33:22.127787+00:00"
+  },
+  {
+    "prediction_key": "4f6688e4d1818bd8bb3e65352c7a0406",
+    "game_id": "4f6688e4d1818bd8bb3e65352c7a0406",
+    "commence_time": "2026-11-03T00:40:00Z",
+    "home_team": "New York Knicks",
+    "away_team": "Brooklyn Nets",
+    "moneyline_pick": "New York Knicks ML",
     "total_pick": "Over",
-    "total_line": 210.5,
+    "total_line": 221.5,
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
@@ -1144,14 +1144,14 @@
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
-    "prediction_key": "27c333f22603d4eda3b9b6a3888476dc",
-    "game_id": "27c333f22603d4eda3b9b6a3888476dc",
+    "prediction_key": "afde8462706839f30115ea9d5f761066",
+    "game_id": "afde8462706839f30115ea9d5f761066",
     "commence_time": "2026-11-03T03:10:00Z",
-    "home_team": "Golden State Warriors",
-    "away_team": "Phoenix Suns",
-    "moneyline_pick": "Golden State Warriors ML",
-    "total_pick": "Over",
-    "total_line": 226.5,
+    "home_team": "Los Angeles Clippers",
+    "away_team": "Toronto Raptors",
+    "moneyline_pick": "Toronto Raptors ML",
+    "total_pick": "Under",
+    "total_line": 220.5,
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
@@ -1166,14 +1166,14 @@
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
-    "prediction_key": "afde8462706839f30115ea9d5f761066",
-    "game_id": "afde8462706839f30115ea9d5f761066",
+    "prediction_key": "27c333f22603d4eda3b9b6a3888476dc",
+    "game_id": "27c333f22603d4eda3b9b6a3888476dc",
     "commence_time": "2026-11-03T03:10:00Z",
-    "home_team": "Los Angeles Clippers",
-    "away_team": "Toronto Raptors",
-    "moneyline_pick": "Toronto Raptors ML",
-    "total_pick": "Under",
-    "total_line": 220.5,
+    "home_team": "Golden State Warriors",
+    "away_team": "Phoenix Suns",
+    "moneyline_pick": "Golden State Warriors ML",
+    "total_pick": "Over",
+    "total_line": 226.5,
     "generated_at": "2026-11-02T13:33:22.127787+00:00"
   },
   {
@@ -1329,6 +1329,28 @@
     "total_pick": "Under",
     "total_line": 233.5,
     "generated_at": "2026-11-04T13:28:32.766816+00:00"
+  },
+  {
+    "prediction_key": "2a76b31e02d1416de069a995589515fc",
+    "game_id": "2a76b31e02d1416de069a995589515fc",
+    "commence_time": "2026-11-06T02:10:00Z",
+    "home_team": "Phoenix Suns",
+    "away_team": "Orlando Magic",
+    "moneyline_pick": "Phoenix Suns ML",
+    "total_pick": "Under",
+    "total_line": 223.5,
+    "generated_at": "2026-11-05T12:56:36.705384+00:00"
+  },
+  {
+    "prediction_key": "ac38449dd3dfbe1c9b48164b6a41aa83",
+    "game_id": "ac38449dd3dfbe1c9b48164b6a41aa83",
+    "commence_time": "2026-11-06T03:10:00Z",
+    "home_team": "Golden State Warriors",
+    "away_team": "Miami Heat",
+    "moneyline_pick": "Miami Heat ML",
+    "total_pick": "Over",
+    "total_line": 235.5,
+    "generated_at": "2026-11-05T12:56:36.705384+00:00"
   },
   {
     "prediction_key": "85869b2fdc16ef10d3e2582bf05ead95",
