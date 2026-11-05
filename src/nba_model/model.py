@@ -339,6 +339,32 @@ def _calibrate_moneyline_prob(
     return float(np.clip(shrunk, 0.12, 0.88))
 
 
+def _calibrate_total_over_prob(
+    projected_total: float,
+    market_total_line: float,
+    residual_total_std: float,
+    over_market_prob: float | None,
+    under_market_prob: float | None,
+) -> float:
+    std = max(float(residual_total_std), 8.0)
+    # Anchor projected total closer to market line to avoid weak-signal drift.
+    anchored_total = 0.35 * float(projected_total) + 0.65 * float(market_total_line)
+    model_over_prob = float(1.0 - norm.cdf(float(market_total_line), loc=anchored_total, scale=std))
+    model_over_prob = float(np.clip(model_over_prob, 0.02, 0.98))
+    model_over_prob = 0.5 + (model_over_prob - 0.5) * 0.65
+
+    if over_market_prob is not None and under_market_prob is not None:
+        market_sum = float(over_market_prob + under_market_prob)
+        if market_sum > 0:
+            no_vig_over = float(over_market_prob / market_sum)
+            blended = 0.3 * model_over_prob + 0.7 * no_vig_over
+            return float(np.clip(blended, 0.25, 0.75))
+    if over_market_prob is not None:
+        blended = 0.45 * model_over_prob + 0.55 * float(over_market_prob)
+        return float(np.clip(blended, 0.25, 0.75))
+    return float(np.clip(model_over_prob, 0.25, 0.75))
+
+
 def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pct: float) -> pd.DataFrame:
     if odds_df.empty:
         return odds_df.copy()
@@ -357,23 +383,29 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
 
         raw_home_win_prob = float(bundle.classifier.predict_proba(features_df)[0, 1])
         projected_total = float(bundle.total_regressor.predict(features_df)[0])
-        over_line = game.get("total_line")
-        over_prob = np.nan
-        under_prob = np.nan
-        if pd.notna(over_line):
-            over_prob = float(1.0 - norm.cdf(float(over_line), loc=projected_total, scale=bundle.residual_total_std))
-            under_prob = float(1.0 - over_prob)
-
         home_market = american_to_implied_prob(game.get("home_moneyline"))
         away_market = american_to_implied_prob(game.get("away_moneyline"))
+        over_market = american_to_implied_prob(game.get("over_price"))
+        under_market = american_to_implied_prob(game.get("under_price"))
         home_win_prob = _calibrate_moneyline_prob(
             raw_home_prob=raw_home_win_prob,
             home_market_prob=home_market,
             away_market_prob=away_market,
         )
         away_win_prob = 1.0 - home_win_prob
-        over_market = american_to_implied_prob(game.get("over_price"))
-        under_market = american_to_implied_prob(game.get("under_price"))
+
+        over_line = game.get("total_line")
+        over_prob = np.nan
+        under_prob = np.nan
+        if pd.notna(over_line):
+            over_prob = _calibrate_total_over_prob(
+                projected_total=projected_total,
+                market_total_line=float(over_line),
+                residual_total_std=bundle.residual_total_std,
+                over_market_prob=over_market,
+                under_market_prob=under_market,
+            )
+            under_prob = float(1.0 - over_prob)
 
         home_edge = (home_win_prob - home_market) * 100.0 if home_market is not None else np.nan
         away_edge = (away_win_prob - away_market) * 100.0 if away_market is not None else np.nan
@@ -412,7 +444,13 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         elif moneyline_pick.startswith(str(game["away_team"])):
             selected_moneyline_edge = away_edge
 
-        if np.isfinite(over_prob) and np.isfinite(under_prob):
+        if np.isfinite(over_edge) and np.isfinite(under_edge):
+            if over_edge <= 0 and under_edge <= 0 and over_market is not None and under_market is not None:
+                # If both totals sides are negative EV, lean to market favorite.
+                total_pick = "Over" if over_market >= under_market else "Under"
+            else:
+                total_pick = "Over" if over_edge >= under_edge else "Under"
+        elif np.isfinite(over_prob) and np.isfinite(under_prob):
             total_pick = "Over" if over_prob >= under_prob else "Under"
         elif np.isfinite(over_prob):
             total_pick = "Over"
