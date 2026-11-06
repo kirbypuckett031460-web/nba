@@ -459,6 +459,15 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         else:
             total_pick = "Over"
 
+        # Directional sanity guard: if the model projection is far from the market
+        # total, do not pick against that signal on weak/ambiguous edge.
+        if pd.notna(over_line):
+            projected_gap = float(projected_total) - float(over_line)
+            if projected_gap <= -6.0 and total_pick == "Over":
+                total_pick = "Under"
+            elif projected_gap >= 6.0 and total_pick == "Under":
+                total_pick = "Over"
+
         rows.append(
             {
                 **game.to_dict(),
