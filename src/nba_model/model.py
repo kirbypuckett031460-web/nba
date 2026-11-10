@@ -143,7 +143,14 @@ def _build_team_state(
     if not seasonal_stats.empty and "season" in seasonal_stats.columns:
         season_slice = seasonal_stats[seasonal_stats["season"] == current_season].copy()
         if season_slice.empty:
-            season_slice = seasonal_stats.copy()
+            # If the active season snapshot is unavailable, fall back to the
+            # latest available season per team (not an arbitrary duplicate row).
+            season_slice = (
+                seasonal_stats.copy()
+                .sort_values("season")
+                .groupby(["TEAM_ID", "TEAM_NAME"], as_index=False)
+                .tail(1)
+            )
         state = season_slice.merge(latest_form, on=["TEAM_ID", "TEAM_NAME"], how="left")
     else:
         # Fallback feature state when season snapshots are unavailable.
