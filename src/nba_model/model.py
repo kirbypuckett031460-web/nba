@@ -406,6 +406,16 @@ def _underdog_min_win_probability(underdog_moneyline: float | int | None) -> flo
     return 0.44
 
 
+def _market_total_side(
+    over_market_prob: float | None,
+    under_market_prob: float | None,
+) -> str | None:
+    if over_market_prob is None or under_market_prob is None:
+        return None
+    # In pure price ties, lean Under to avoid defaulting to public Over bias.
+    return "Over" if float(over_market_prob) > float(under_market_prob) else "Under"
+
+
 def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pct: float) -> pd.DataFrame:
     if odds_df.empty:
         return odds_df.copy()
@@ -492,12 +502,22 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         elif moneyline_pick.startswith(str(game["away_team"])):
             selected_moneyline_edge = away_edge
 
-        if np.isfinite(over_edge) and np.isfinite(under_edge):
-            if over_edge <= 0 and under_edge <= 0 and over_market is not None and under_market is not None:
-                # If both totals sides are negative EV, lean to market favorite.
-                total_pick = "Over" if over_market >= under_market else "Under"
-            else:
-                total_pick = "Over" if over_edge >= under_edge else "Under"
+        projected_gap = np.nan
+        if pd.notna(over_line):
+            projected_gap = float(projected_total) - float(over_line)
+
+        market_total_pick = _market_total_side(over_market_prob=over_market, under_market_prob=under_market)
+        if market_total_pick is not None:
+            # Market-first baseline for totals has been materially more stable
+            # than noisy model edges. Only override on very large projection gaps.
+            total_pick = market_total_pick
+            if np.isfinite(projected_gap):
+                if projected_gap >= 12.0:
+                    total_pick = "Over"
+                elif projected_gap <= -12.0:
+                    total_pick = "Under"
+        elif np.isfinite(over_edge) and np.isfinite(under_edge):
+            total_pick = "Over" if over_edge >= under_edge else "Under"
         elif np.isfinite(over_prob) and np.isfinite(under_prob):
             total_pick = "Over" if over_prob >= under_prob else "Under"
         elif np.isfinite(over_prob):
@@ -506,15 +526,6 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
             total_pick = "Under"
         else:
             total_pick = "Over"
-
-        # Directional sanity guard: if the model projection is far from the market
-        # total, do not pick against that signal on weak/ambiguous edge.
-        if pd.notna(over_line):
-            projected_gap = float(projected_total) - float(over_line)
-            if projected_gap <= -6.0 and total_pick == "Over":
-                total_pick = "Under"
-            elif projected_gap >= 6.0 and total_pick == "Under":
-                total_pick = "Over"
 
         rows.append(
             {
