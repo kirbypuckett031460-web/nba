@@ -389,6 +389,23 @@ def _underdog_min_edge_threshold(underdog_moneyline: float | int | None) -> floa
     return 2.5
 
 
+def _underdog_min_win_probability(underdog_moneyline: float | int | None) -> float:
+    if underdog_moneyline is None:
+        return 0.40
+    odds = float(underdog_moneyline)
+    if np.isnan(odds):
+        return 0.40
+    if odds >= 300:
+        return 0.33
+    if odds >= 200:
+        return 0.36
+    if odds >= 150:
+        return 0.39
+    if odds >= 100:
+        return 0.42
+    return 0.44
+
+
 def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pct: float) -> pd.DataFrame:
     if odds_df.empty:
         return odds_df.copy()
@@ -457,10 +474,15 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
             underdog_edge = away_edge if underdog_team == str(game["away_team"]) else home_edge
             underdog_moneyline = game["away_moneyline"] if underdog_team == str(game["away_team"]) else game["home_moneyline"]
             min_edge_for_dog = _underdog_min_edge_threshold(underdog_moneyline)
+            underdog_prob = away_win_prob if underdog_team == str(game["away_team"]) else home_win_prob
+            min_prob_for_dog = _underdog_min_win_probability(underdog_moneyline)
             if (
                 moneyline_pick.startswith(underdog_team)
                 and np.isfinite(underdog_edge)
-                and float(underdog_edge) < min_edge_for_dog
+                and (
+                    float(underdog_edge) < min_edge_for_dog
+                    or float(underdog_prob) < min_prob_for_dog
+                )
             ):
                 moneyline_pick = f"{favorite_team} ML"
 
