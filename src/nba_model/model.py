@@ -509,12 +509,13 @@ def predict_from_odds(bundle: TrainingBundle, odds_df: pd.DataFrame, min_edge_pc
         market_total_pick = _market_total_side(over_market_prob=over_market, under_market_prob=under_market)
         if market_total_pick is not None:
             # Market-first baseline for totals has been materially more stable
-            # than noisy model edges. Only override on very large projection gaps.
+            # than noisy model edges. But don't allow large projection-vs-line
+            # contradictions to survive when the model gap is meaningful.
             total_pick = market_total_pick
             if np.isfinite(projected_gap):
-                if projected_gap >= 12.0:
+                if projected_gap >= 8.0:
                     total_pick = "Over"
-                elif projected_gap <= -12.0:
+                elif projected_gap <= -8.0:
                     total_pick = "Under"
         elif np.isfinite(over_edge) and np.isfinite(under_edge):
             total_pick = "Over" if over_edge >= under_edge else "Under"
