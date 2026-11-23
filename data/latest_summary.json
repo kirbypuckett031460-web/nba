@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-23T14:58:18.898891+00:00",
+  "generated_at": "2026-11-23T17:07:50.868852+00:00",
   "games_count": 10,
   "metrics": {
-    "moneyline_auc": 0.7552743870217713,
-    "moneyline_log_loss": 0.5976506817264192,
-    "total_mae": 15.440019621689551,
-    "sample_games": 5530.0
+    "moneyline_auc": 0.6827268383098265,
+    "moneyline_log_loss": 0.6558583358760096,
+    "total_mae": 15.911546934456243,
+    "sample_games": 5282.0
   },
   "filter_date": "2026-11-23",
   "filter_timezone": "America/New_York",
@@ -13,25 +13,25 @@
     "moneyline": {
       "yesterday_record": "4-3",
       "yesterday_pct": 57.1,
-      "ytd_record": "127-111",
-      "ytd_pct": 53.4,
+      "ytd_record": "126-107",
+      "ytd_pct": 54.1,
       "yesterday_wins": 4,
       "yesterday_losses": 3,
       "yesterday_pushes": 0,
-      "ytd_wins": 127,
-      "ytd_losses": 111,
+      "ytd_wins": 126,
+      "ytd_losses": 107,
       "ytd_pushes": 0
     },
     "totals": {
       "yesterday_record": "6-1",
       "yesterday_pct": 85.7,
-      "ytd_record": "108-130",
-      "ytd_pct": 45.4,
+      "ytd_record": "104-129",
+      "ytd_pct": 44.6,
       "yesterday_wins": 6,
       "yesterday_losses": 1,
       "yesterday_pushes": 0,
-      "ytd_wins": 108,
-      "ytd_losses": 130,
+      "ytd_wins": 104,
+      "ytd_losses": 129,
       "ytd_pushes": 0
     }
   },
