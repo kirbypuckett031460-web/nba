@@ -70,6 +70,7 @@ def main() -> None:
         )
 
     auth_error: OddsApiAuthError | None = None
+    slate_lock_error: ValueError | None = None
     for idx, candidate_key in enumerate(key_candidates):
         os.environ["ODDS_API_KEY"] = candidate_key
         settings = AppSettings()
@@ -86,6 +87,24 @@ def main() -> None:
         except OddsApiAuthError as exc:
             auth_error = exc
             continue
+        except ValueError as exc:
+            if "is locked" in str(exc):
+                slate_lock_error = exc
+                break
+            raise
+
+    if slate_lock_error and base_settings.predictions_path.exists():
+        locked_payload = json.loads(base_settings.predictions_path.read_text(encoding="utf-8"))
+        _write_summary(
+            locked_payload,
+            refresh_status="locked",
+            refresh_message=str(slate_lock_error),
+        )
+        print("Slate locked. Kept existing published predictions unchanged.")
+        return
+
+    if slate_lock_error:
+        raise SystemExit(str(slate_lock_error))
 
     if auth_error and base_settings.predictions_path.exists():
         stale_payload = json.loads(base_settings.predictions_path.read_text(encoding="utf-8"))

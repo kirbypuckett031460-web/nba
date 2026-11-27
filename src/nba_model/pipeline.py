@@ -54,6 +54,38 @@ def _filter_predictions_by_date(
     return filtered.reset_index(drop=True), coerced_date
 
 
+def _slate_lock_time_utc(predictions_df: pd.DataFrame) -> pd.Timestamp | None:
+    if predictions_df.empty or "commence_time" not in predictions_df.columns:
+        return None
+    starts = pd.to_datetime(predictions_df["commence_time"], utc=True, errors="coerce").dropna()
+    if starts.empty:
+        return None
+    return starts.min()
+
+
+def _existing_locked_payload(
+    settings: AppSettings,
+    filter_date: date | None,
+    now_utc: pd.Timestamp,
+) -> dict[str, Any] | None:
+    if filter_date is None or not settings.predictions_path.exists():
+        return None
+    existing = load_predictions(settings.predictions_path)
+    existing_filter_date = str(existing.get("filter_date") or "").strip()
+    if existing_filter_date != filter_date.isoformat():
+        return None
+    existing_games = existing.get("games", [])
+    if not existing_games:
+        return None
+    existing_df = pd.DataFrame(existing_games)
+    lock_time = _slate_lock_time_utc(existing_df)
+    if lock_time is None:
+        return None
+    if now_utc >= lock_time:
+        return existing
+    return None
+
+
 def generate_predictions(
     settings: AppSettings,
     force_retrain: bool = False,
@@ -88,6 +120,24 @@ def generate_predictions(
         target_date=target_date,
         target_timezone=target_timezone,
     )
+    now_utc = pd.Timestamp.now(tz="UTC")
+    locked_payload = _existing_locked_payload(
+        settings=settings,
+        filter_date=filter_date,
+        now_utc=now_utc,
+    )
+    if locked_payload is not None:
+        # Slate is locked and already published for this date; return it unchanged.
+        locked_payload["slate_locked"] = True
+        return locked_payload
+
+    lock_time = _slate_lock_time_utc(predictions_df)
+    if filter_date is not None and lock_time is not None and now_utc >= lock_time:
+        lock_et = lock_time.tz_convert("America/New_York").strftime("%Y-%m-%d %I:%M %p ET")
+        raise ValueError(
+            f"Slate for {filter_date.isoformat()} is locked (first tip: {lock_et}). "
+            "No new picks can be published after lock."
+        )
     generated_at = datetime.now(timezone.utc).isoformat()
 
     history_df = update_pick_history(
