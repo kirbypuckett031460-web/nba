@@ -105,7 +105,12 @@ with left:
                 if payload.get("filter_date")
                 else " for all upcoming dates"
             )
-            st.success(f"Generated {len(payload.get('games', []))} game predictions{filter_label}.")
+            if payload.get("slate_locked"):
+                st.warning(
+                    f"Slate is locked{filter_label}. Existing published picks were kept unchanged."
+                )
+            else:
+                st.success(f"Generated {len(payload.get('games', []))} game predictions{filter_label}.")
         except Exception as exc:
             st.error(f"Prediction refresh failed: {exc}")
 
